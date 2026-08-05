@@ -1,12 +1,15 @@
 {
   "projects": {
-    "default": "caseforge"
+    "default": "andventure-map"
   },
   "targets": {
-    "caseforge": {
+    "andventure-map": {
       "hosting": {
-        "caseforge": ["caseforge"]
+        "caseforge": [
+          "caseforge"
+        ]
       }
     }
-  }
+  },
+  "etags": {}
 }
