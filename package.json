@@ -4,16 +4,19 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/sync-prisma-ensure.js && prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "postinstall": "node scripts/sync-prisma-ensure.js && prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "deploy:firebase": "npm run build && firebase deploy --only hosting"
+    "audit:workflow": "tsx scripts/audit-workflow.ts",
+    "deploy:firebase": "node scripts/deploy-firebase.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1103.0",
@@ -40,7 +43,9 @@
     "superjson": "^2.2.6",
     "xlsx": "^0.18.5",
     "zod": "^4.4.3",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.14",
+    "prisma": "5.22.0",
+    "caseforge-prisma-ensure": "file:./vendor/prisma-ensure"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.11",
@@ -53,7 +58,6 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "postcss": "^8",
-    "prisma": "5.22.0",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.23.7",
     "typescript": "^5",

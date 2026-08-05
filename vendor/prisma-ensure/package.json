@@ -1,0 +1,13 @@
+{
+  "name": "caseforge-prisma-ensure",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ensures Prisma client is generated inside Firebase SSR functions install",
+  "scripts": {
+    "postinstall": "node ./ensure.js"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "prisma": "5.22.0"
+  }
+}

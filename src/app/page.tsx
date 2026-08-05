@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/server/auth/config";
 
-export default async function HomePage() {
-  const session = await auth();
-  redirect(session?.user ? "/dashboard" : "/login");
+/** Avoid pulling Prisma/auth into `/` — that was crashing SSR when client wasn't generated. */
+export default function HomePage() {
+  redirect("/login");
 }

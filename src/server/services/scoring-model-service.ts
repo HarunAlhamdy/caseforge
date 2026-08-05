@@ -17,6 +17,8 @@ export interface ProvisionTenantInput {
   subscriptionTier?: string;
   adminEmail: string;
   adminName: string;
+  /** If omitted, a one-time random password is generated and returned as tempPassword */
+  password?: string;
 }
 
 export async function provisionTenant(
@@ -24,7 +26,7 @@ export async function provisionTenant(
   input: ProvisionTenantInput,
 ) {
   const globalConfig = getGlobalConfig();
-  const tempPassword = crypto.randomUUID();
+  const tempPassword = input.password ?? crypto.randomUUID();
   const passwordHash = await bcrypt.hash(tempPassword, 10);
 
   return db.$transaction(async (tx) => {
