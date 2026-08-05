@@ -168,7 +168,7 @@ export const architectureRouter = createTRPCRouter({
       if (existing) {
         return ctx.scopedDb.solutionArchitecture.update({
           where: { useCaseId },
-          data: payload as Prisma.SolutionArchitectureUpdateInput,
+          data: payload as Prisma.SolutionArchitectureUncheckedUpdateInput,
         });
       }
 
@@ -179,7 +179,7 @@ export const architectureRouter = createTRPCRouter({
           createdById: ctx.user.id,
           ...payload,
           aiPattern: payload.aiPattern as AiPattern,
-        } as unknown as Prisma.SolutionArchitectureCreateInput,
+        } as Prisma.SolutionArchitectureUncheckedCreateInput,
       });
     }),
 

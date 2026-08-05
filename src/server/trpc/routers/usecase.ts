@@ -127,6 +127,9 @@ async function performSubmit(
   const tenantId = requireTenantId(ctx);
   const useCase = await ctx.scopedDb.useCase.findFirst({
     where: { id: useCaseId },
+    include: {
+      actionItems: { take: 1, orderBy: { followUpDate: "desc" } },
+    },
   });
   if (!useCase) throw new TRPCError({ code: "NOT_FOUND" });
 
@@ -138,6 +141,12 @@ async function performSubmit(
 
   const intakeConfig = await getTenantIntakeConfig(ctx.scopedDb, tenantId);
   const values = mapUseCaseToIntakeValues(useCase);
+  const action = useCase.actionItems[0];
+  if (action) {
+    values.recommendedAction = action.recommendedAction ?? undefined;
+    values.nextStepsOwner = action.owner ?? undefined;
+    values.followUpDate = action.followUpDate?.toISOString().slice(0, 10);
+  }
   if (!areAllMandatorySectionsComplete(values, intakeConfig)) {
     throw new TRPCError({
       code: "BAD_REQUEST",

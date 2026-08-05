@@ -462,9 +462,9 @@ async function runWorkflow(base: string, label: string) {
       "architecture.save",
       {
         useCaseId,
-        status: "DRAFT",
-        modelHosting: "managed",
-        deploymentArch: "serverless API + queue",
+        aiPattern: "RAG",
+        modelHosting: "OPENAI_MANAGED",
+        deploymentArch: "SERVERLESS",
       },
       cookieJar,
     );
