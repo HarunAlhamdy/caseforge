@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+import forms from "@tailwindcss/forms";
+import typography from "@tailwindcss/typography";
 
 const config: Config = {
   content: [
@@ -11,9 +13,20 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        brand: {
+          primary: "var(--brand-primary)",
+          accent: "var(--brand-accent)",
+        },
+        slate: {
+          850: "#1e293b",
+        },
+      },
+      fontFamily: {
+        sans: ["var(--font-inter)", "var(--brand-font)", "system-ui", "sans-serif"],
       },
     },
   },
-  plugins: [],
+  plugins: [forms, typography],
 };
+
 export default config;

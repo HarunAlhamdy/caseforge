@@ -3,25 +3,48 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --brand-primary: #0f766e;
+  --brand-accent: #14b8a6;
+  --brand-font: Inter, system-ui, sans-serif;
+  --sidebar-width: 16rem;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--brand-font);
+}
+
+@layer base {
+  h1, h2, h3, h4 {
+    @apply text-slate-900;
+  }
+
+  a {
+    @apply transition-colors;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .bg-brand-primary {
+    background-color: var(--brand-primary);
+  }
+
+  .text-brand-primary {
+    color: var(--brand-primary);
+  }
+
+  .ring-brand-accent {
+    --tw-ring-color: var(--brand-accent);
+  }
+
+  .focus-visible\:ring-brand-accent:focus-visible {
+    --tw-ring-color: var(--brand-accent);
   }
 }

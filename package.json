@@ -6,11 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
+    "deploy:firebase": "npm run build && firebase deploy --only hosting"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1103.0",
-    "@prisma/client": "^7.9.1",
+    "@hookform/resolvers": "^5.7.1",
+    "@prisma/client": "5.22.0",
     "@tanstack/react-query": "^4.44.0",
     "@trpc/client": "^10.45.4",
     "@trpc/next": "^10.45.4",
@@ -24,21 +32,31 @@
     "openai": "^7.4.0",
     "react": "^18",
     "react-dom": "^18",
+    "react-hook-form": "^7.84.0",
     "recharts": "^3.10.1",
     "resend": "^6.18.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "superjson": "^2.2.6",
     "xlsx": "^0.18.5",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@tailwindcss/forms": "^0.5.11",
+    "@tailwindcss/typography": "^0.5.20",
+    "@testing-library/react": "^16.3.2",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "postcss": "^8",
+    "prisma": "5.22.0",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "tsx": "^4.23.7",
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

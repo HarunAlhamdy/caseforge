@@ -1,0 +1,1162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum TenantType {
+  PARTNER_MANAGED
+  SELF_SERVE
+}
+
+enum PartnerRole {
+  PARTNER_ADMIN
+  PARTNER_CONSULTANT
+}
+
+enum SecurityRole {
+  PLATFORM_SUPER_ADMIN
+  PARTNER_ADMIN
+  PARTNER_CONSULTANT
+  CUSTOMER_ADMIN
+  PORTFOLIO_MANAGER
+  EVALUATOR
+  SUBMITTER
+  DATA_SECURITY_REVIEWER
+  EXECUTIVE_SPONSOR
+  VIEWER
+}
+
+enum LifecycleStage {
+  INTAKE_DRAFT
+  INTAKE_COMPLETE
+  PENDING_REVIEW
+  INFO_REQUEST
+  GATING_REVIEW
+  PROFILE_REVIEW
+  PORTFOLIO_SCORING
+  DEEP_FEASIBILITY
+  WAVE_PLANNING
+  PILOT
+  SCALE_UP
+  PRODUCTION
+  ON_HOLD
+  GATED_OUT
+  RETIRED
+}
+
+enum UseCaseStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  GATED_OUT
+}
+
+enum GateDecision {
+  NONE
+  PASS
+  GATE_A
+  GATE_B
+  GATE_C
+  GATE_D
+  HOLD
+}
+
+enum RiskTier {
+  R1_MINIMAL
+  R2_LIMITED
+  R3_ELEVATED
+  R4_HIGH_IMPACT
+}
+
+enum CompositeVerdict {
+  STRONG_GO
+  CONDITIONAL_GO
+  NOT_READY
+  NO_GO
+}
+
+enum HardGateStatus {
+  ALL_PASSED
+  HAS_FAILURES
+  INCOMPLETE
+}
+
+enum CostBand {
+  S_UNDER_50K
+  M_50K_150K
+  L_150K_400K
+  XL_OVER_400K
+}
+
+enum DataReadinessFlag {
+  GREEN
+  AMBER
+  RED
+}
+
+enum DataClassification {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  PII
+  PII_SENSITIVE
+  PHI
+  CUI
+  FINANCIAL
+}
+
+enum PiiType {
+  NONE
+  SSN
+  TAX_ID
+  DOB
+  EMAIL
+  PHONE
+  ADDRESS
+  NAME
+  BIOMETRIC
+  FINANCIAL_ACCOUNT
+  HEALTH_RECORD
+  DRIVER_LICENSE
+  PASSPORT
+  OTHER
+}
+
+enum LlmContextEntry {
+  YES_IN_PROMPT
+  YES_IN_RAG
+  NO_PRE_PROCESS
+  NO_NOT_USED
+}
+
+enum RequiredHandling {
+  TOKENIZE
+  MASK
+  ENCRYPT
+  ANONYMIZE
+  REDACT
+  AGGREGATE_ONLY
+  NO_SPECIAL
+}
+
+enum ConsentBasis {
+  CONTRACT
+  LEGITIMATE_INTEREST
+  EXPLICIT_CONSENT
+  LEGAL_OBLIGATION
+  NOT_APPLICABLE
+}
+
+enum SystemType {
+  ERP
+  CRM
+  DATA_WAREHOUSE
+  DATA_LAKE
+  FILE_SHARE
+  API
+  MAINFRAME
+  SAAS
+  IOT
+  OTHER
+}
+
+enum AccessMethod {
+  DIRECT_DB
+  REST_API
+  ODATA
+  SFTP
+  FLAT_FILE
+  CDC
+  KAFKA
+  GRAPHQL
+  SDK
+  MANUAL
+  OTHER
+}
+
+enum AuthMethod {
+  OAUTH2
+  API_KEY
+  SERVICE_ACCOUNT
+  SSO
+  CERTIFICATE
+  BASIC_AUTH
+  NONE
+  OTHER
+}
+
+enum NetworkAccess {
+  VPN_REQUIRED
+  PRIVATE_ENDPOINT
+  PUBLIC
+  AIR_GAPPED
+  OTHER
+}
+
+enum LatencyTolerance {
+  REAL_TIME
+  SUB_HOUR
+  SAME_DAY
+  NEXT_DAY
+  WEEKLY
+  NOT_CRITICAL
+}
+
+enum AiPattern {
+  RAG
+  FINE_TUNED
+  SINGLE_AGENT
+  MULTI_AGENT
+  CLASSIFICATION
+  EXTRACTION
+  SUMMARIZATION
+  CODE_GEN
+  OTHER
+}
+
+enum AgentSubPattern {
+  REACT
+  PLAN_EXECUTE
+  SUPERVISOR_WORKER
+  SWARM
+  TOOL_USE_ONLY
+  NOT_APPLICABLE
+}
+
+enum ModelHosting {
+  OPENAI_MANAGED
+  SELF_HOSTED
+  BEDROCK
+  ON_PREM
+  OTHER
+}
+
+enum VectorStore {
+  AI_SEARCH
+  PINECONE
+  WEAVIATE
+  PGVECTOR
+  CHROMA
+  COSMOS_VECTOR
+  OTHER
+}
+
+enum RetrievalStrategy {
+  SEMANTIC
+  KEYWORD
+  HYBRID_RRF
+  MULTI_QUERY
+  OTHER
+}
+
+enum DeploymentArch {
+  SERVERLESS
+  CONTAINER
+  APP_SERVICE
+  VM
+  FUNCTIONS
+  OTHER
+}
+
+enum FallbackBehavior {
+  ESCALATE
+  RETRY_SIMPLIFIED
+  LOG_ABANDON
+  QUEUE_REVIEW
+}
+
+enum MemoryMgmt {
+  STATELESS
+  SESSION_SCOPED
+  PERSISTENT
+}
+
+enum SecurityReviewStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  ATO_GRANTED
+  NOT_REQUIRED
+}
+
+enum NdaStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  EXECUTED
+  NOT_REQUIRED
+}
+
+enum ProfileSection {
+  DATA_INGESTION
+  DATA_QUALITY
+  SENSITIVE_DATA
+  DOMAIN_MODEL
+  GOVERNANCE
+  SECURITY
+  SOLUTION_ARCHITECTURE
+}
+
+enum ProfileReviewStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  INFO_REQUESTED
+}
+
+enum ControlStatus {
+  REQUIRED
+  IMPLEMENTED
+  VERIFIED
+  WAIVED
+}
+
+enum ConfidenceLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ScoringAxisType {
+  VALUE
+  FEASIBILITY
+  RISK
+}
+
+enum SuccessCriteriaStatus {
+  NOT_MEASURED
+  BELOW_MINIMUM
+  MEETS_MINIMUM
+  MEETS_TARGET
+  EXCEEDS_STRETCH
+}
+
+enum ScoringModelVersionStatus {
+  DRAFT
+  ACTIVE
+  SUPERSEDED
+}
+
+enum WeightProposalStatus {
+  PROPOSED
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+// ─── Partner & tenancy ───────────────────────────────────────────────────────
+
+model Partner {
+  id              String   @id @default(cuid())
+  name            String
+  logoUrl         String?
+  primaryColor    String?
+  accentColor     String?
+  contactEmail    String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  maxCustomers    Int?
+  maxConsultants  Int?
+
+  partnerUsers          PartnerUser[]
+  tenants               Tenant[]
+  customerAssignments   CustomerAssignment[]
+  auditLogs             AuditLog[]
+}
+
+model PartnerUser {
+  id          String      @id @default(cuid())
+  partnerId   String
+  userId      String      @unique
+  partnerRole PartnerRole
+  isActive    Boolean     @default(true)
+  joinedAt    DateTime    @default(now())
+
+  partner             Partner              @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerAssignments CustomerAssignment[]
+
+  @@unique([partnerId, userId])
+  @@index([partnerId])
+  @@index([userId])
+}
+
+model CustomerAssignment {
+  id             String       @id @default(cuid())
+  partnerId      String
+  partnerUserId  String
+  tenantId       String
+  roleInTenant   SecurityRole
+  assignedBy     String?
+  assignedAt     DateTime     @default(now())
+  isActive       Boolean      @default(true)
+
+  partner     Partner     @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partnerUser PartnerUser @relation(fields: [partnerUserId], references: [id], onDelete: Cascade)
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+  @@index([tenantId])
+  @@index([partnerUserId])
+}
+
+model Tenant {
+  id                    String     @id @default(cuid())
+  name                  String
+  type                  TenantType @default(SELF_SERVE)
+  partnerId             String?
+  subscriptionTier      String?
+  isActive              Boolean    @default(true)
+  createdAt             DateTime   @default(now())
+  logoUrl               String?
+  primaryColor          String?    @default("#0f766e")
+  accentColor           String?    @default("#14b8a6")
+  fontFamily            String?    @default("Inter, system-ui, sans-serif")
+  customDomain          String?
+  emailFromName         String?
+  emailFromAddress      String?
+  terminologyOverrides  Json?
+  intakeFormConfig      Json?
+
+  partner               Partner?              @relation(fields: [partnerId], references: [id])
+  users                 User[]
+  useCases              UseCase[]
+  scoringModels         ScoringModel[]
+  customerAssignments   CustomerAssignment[]
+  sourceSystems         SourceSystem[]
+  sensitiveDataElements SensitiveDataElement[]
+  solutionArchitectures SolutionArchitecture[]
+  financialModels       FinancialModel[]
+  effortEstimates       EffortEstimate[]
+  mandatoryControls     MandatoryControl[]
+  hardGates             HardGate[]
+  successCriteria       SuccessCriteria[]
+  lifecycleEvents       LifecycleEvent[]
+  profileReviews        ProfileReview[]
+  actionItems           ActionItem[]
+  scoringModelVersions  ScoringModelVersion[]
+  scoringSnapshots      ScoringSnapshot[]
+  weightChangeProposals WeightChangeProposal[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+
+  @@index([partnerId])
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String?
+  tenantId     String?
+  role         SecurityRole @default(VIEWER)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  lastLoginAt  DateTime?
+
+  tenant                         Tenant?              @relation(fields: [tenantId], references: [id])
+  partnerUser                    PartnerUser?
+  submittedUseCases              UseCase[]            @relation("UseCaseSubmittedBy")
+  gateDecidedUseCases            UseCase[]            @relation("UseCaseGateDecidedBy")
+  axisScores                     AxisScore[]          @relation("AxisScoreScoredBy")
+  feasibilityAssessments         FeasibilityAssessment[] @relation("FeasibilityAssessmentScoredBy")
+  hardGatesReviewed              HardGate[]           @relation("HardGateReviewedBy")
+  lifecycleEventsTransitioned    LifecycleEvent[]     @relation("LifecycleEventTransitionedBy")
+  lifecycleEventsApproved        LifecycleEvent[]     @relation("LifecycleEventApprovedBy")
+  profileReviewsAssigned         ProfileReview[]      @relation("ProfileReviewAssignedTo")
+  solutionArchitecturesCreated   SolutionArchitecture[] @relation("SolutionArchitectureCreatedBy")
+  effortEstimatesCreated         EffortEstimate[]     @relation("EffortEstimateCreatedBy")
+  mandatoryControlsWaiverApproved MandatoryControl[]   @relation("MandatoryControlWaiverApprovedBy")
+  mandatoryControlsVerified      MandatoryControl[]   @relation("MandatoryControlVerifiedBy")
+  scoringModelsCreated           ScoringModel[]       @relation("ScoringModelCreatedBy")
+  scoringModelVersionsCreated    ScoringModelVersion[] @relation("ScoringModelVersionCreatedBy")
+  weightChangeProposalsProposed  WeightChangeProposal[] @relation("WeightChangeProposalProposedBy")
+  weightChangeProposalsResolved    WeightChangeProposal[] @relation("WeightChangeProposalResolvedBy")
+  notifications                  Notification[]
+  auditLogs                      AuditLog[]
+
+  @@index([tenantId])
+}
+
+// ─── Use case lifecycle ──────────────────────────────────────────────────────
+
+model UseCase {
+  id                       String              @id @default(cuid())
+  tenantId                 String
+  useCaseNumber            String
+  title                    String
+  businessUnit             String
+  submittedById            String
+  dateSubmitted            DateTime            @default(now())
+  executiveSponsorName     String?
+  executiveSponsorTitle    String?
+  problemStatement         String?
+  proposedSolution         String?
+  expectedBenefits         String?
+  aiPattern                AiPattern?
+  autonomyLevel            Int?
+  currentFtes              Float?
+  currentVolume            String?
+  currentCycleTime         String?
+  currentErrorRate         Float?
+  annualCost               Float?
+  knownPainPoints          String?
+  sourceSystemsText        String?
+  readSystems              String?
+  writeSystems             String?
+  ingestionMethod          String?
+  ingestionFrequency       String?
+  dataVolume               String?
+  historicalRequired       Boolean?
+  dqIssues                 String?
+  remediationNeeded        Boolean?
+  dqOwnership              String?
+  businessDomains          Json?
+  masterRefData            String?
+  modelRelationship        String?
+  auditabilityRequired     Boolean?
+  policyReviewRequired     Boolean?
+  policyReviewBody         String?
+  ndaStatus                NdaStatus?
+  dataOwner                String?
+  dataSteward              String?
+  retentionPolicy          String?
+  regulatoryConsiderations String?
+  dataClassification       DataClassification?
+  accessControlReqs        String?
+  piiCuiPresent            Boolean?
+  encryptionReqs           Json?
+  govtModelAccess          Boolean?
+  securityReviewStatus     SecurityReviewStatus?
+  reportingReqs            String?
+  endUserPersonas          String?
+  conversationalAiRequired Boolean?
+  accessChannels           Json?
+  downstreamConsumption    String?
+  submitterPriority        String?
+  submitterComplexity      String?
+  estimatedTimeline        String?
+  dependenciesRisks        String?
+  gateDecision             GateDecision        @default(NONE)
+  gateRationale            String?
+  gateDecidedById          String?
+  gateDecidedAt            DateTime?
+  valueScore               Float?
+  feasibilityScore         Float?
+  riskScore                Float?
+  riskTier                 RiskTier?
+  tierMultiplier           Float?
+  priorityScore            Float?
+  rank                     Int?
+  compositeFeasibility     Float?
+  compositeVerdict         CompositeVerdict?
+  hardGateStatus           HardGateStatus?
+  wave                     Int?
+  costBand                 CostBand?
+  timelineBand             String?
+  pilotSlice               String?
+  dataReadinessFlag        DataReadinessFlag?
+  currentStage             LifecycleStage      @default(INTAKE_DRAFT)
+  status                   UseCaseStatus       @default(ACTIVE)
+  currentScoringVersionId  String?
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
+
+  tenant                   Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  submittedBy              User                  @relation("UseCaseSubmittedBy", fields: [submittedById], references: [id])
+  gateDecidedBy            User?                 @relation("UseCaseGateDecidedBy", fields: [gateDecidedById], references: [id])
+  currentScoringVersion    ScoringModelVersion?  @relation("UseCaseCurrentScoringVersion", fields: [currentScoringVersionId], references: [id])
+  scores                   AxisScore[]
+  sourceSystemInventory    SourceSystem[]
+  sensitiveDataElements    SensitiveDataElement[]
+  solutionArchitecture     SolutionArchitecture?
+  financialModel           FinancialModel?
+  effortEstimate           EffortEstimate?
+  hardGates                HardGate[]
+  feasibilityAssessments   FeasibilityAssessment[]
+  successCriteria          SuccessCriteria[]
+  lifecycleEvents          LifecycleEvent[]
+  profileReviews           ProfileReview[]
+  actionItems              ActionItem[]
+  scoringSnapshots         ScoringSnapshot[]
+  mandatoryControls        MandatoryControl[]
+
+  @@unique([tenantId, useCaseNumber])
+  @@index([tenantId])
+  @@index([submittedById])
+  @@index([currentStage])
+  @@index([status])
+}
+
+model SourceSystem {
+  id                   String            @id @default(cuid())
+  useCaseId            String
+  tenantId             String
+  systemName           String
+  systemType           SystemType
+  environment          String?
+  tablesViewsObjects   String?
+  fieldsRequired       Json?
+  accessMethod         AccessMethod
+  authMethod           AuthMethod?
+  rateLimits           String?
+  dataRefreshSla       String?
+  sourceOwnerContact   String?
+  existingEtl          String?
+  networkAccess        NetworkAccess
+  initialLoadVolume    String?
+  incrementalVolume    String?
+  growthRate           String?
+  latencyTolerance     LatencyTolerance
+
+  useCase               UseCase                @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sensitiveDataElements SensitiveDataElement[]
+
+  @@index([tenantId])
+  @@index([useCaseId])
+}
+
+model SensitiveDataElement {
+  id                   String             @id @default(cuid())
+  useCaseId            String
+  tenantId             String
+  sourceSystemId       String?
+  sourceSystemName     String?
+  tableObject          String?
+  fieldColumnName      String?
+  businessMeaning      String?
+  dataClassification   DataClassification
+  piiType              PiiType?
+  regulatoryRegime     String?
+  entersLlmContext     LlmContextEntry?
+  requiredHandling     RequiredHandling?
+  consentBasis         ConsentBasis?
+  rightToErasure       Boolean            @default(false)
+  crossBorderTransfer  Boolean            @default(false)
+  transferDestination  String?
+  retentionPeriod      String?
+
+  useCase      UseCase       @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sourceSystem SourceSystem? @relation(fields: [sourceSystemId], references: [id])
+
+  @@index([tenantId])
+  @@index([useCaseId])
+}
+
+model SolutionArchitecture {
+  id                        String           @id @default(cuid())
+  useCaseId                 String           @unique
+  tenantId                  String
+  aiPattern                 AiPattern
+  agentSubPattern           AgentSubPattern?
+  llmModels                 Json?
+  modelHosting              ModelHosting?
+  contextWindowReq          Int?
+  tokenEstimatePerTx        Int?
+  dailyTxVolume             Int?
+  estMonthlyLlmCost         Float?
+  fineTuningRequired        Boolean?
+  trainingDataDesc          String?
+  ragCorpusDesc             String?
+  ragCorpusDocCount         Int?
+  ragUpdateFrequency        String?
+  chunkingStrategy          String?
+  embeddingModel            String?
+  vectorStore               VectorStore?
+  retrievalStrategy         RetrievalStrategy?
+  rerankingEnabled          Boolean?
+  citationRequired          Boolean?
+  corpusSensitiveData       Boolean?
+  agentTools                Json?
+  agentWriteActions         Json?
+  agentReadActions          Json?
+  approvalGates             Json?
+  maxToolCalls              Int?
+  toolCallTimeoutSec        Int?
+  fallbackBehavior          FallbackBehavior?
+  memoryMgmt                MemoryMgmt?
+  orchestrationPattern      String?
+  observabilityTool         String?
+  inputValidation           Json?
+  outputValidation          Json?
+  contentFilterLevel          String?
+  promptInjectionMitigation String?
+  hallucinationMitigation   String?
+  piiLeakagePrevention      String?
+  rateLimitConfig           String?
+  tokenBudgetMax            Int?
+  biasTestingScope          String?
+  redTeamScope              String?
+  driftMonitoringPlan       String?
+  computeRequirements       String?
+  storageRequirements       String?
+  estMonthlyInfraCost       Float?
+  deploymentArch            DeploymentArch?
+  scalingStrategy           String?
+  haRequirements            String?
+  loggingConfig             String?
+  backupRecovery            String?
+  envPromotionPath          String?
+  createdById               String
+  version                   Int              @default(1)
+  status                    String           @default("DRAFT")
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+
+  useCase   UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy User    @relation("SolutionArchitectureCreatedBy", fields: [createdById], references: [id])
+
+  @@index([tenantId])
+}
+
+model FinancialModel {
+  id                    String  @id @default(cuid())
+  useCaseId             String  @unique
+  tenantId              String
+  currentLaborDirect    Float?
+  currentLaborMgmt      Float?
+  currentErrorCost      Float?
+  currentSlaPenalty     Float?
+  currentOpportunityCost Float?
+  currentToolCost       Float?
+  currentTotal          Float?
+  devInternalOnetime    Float?
+  devExternalOnetime    Float?
+  llmApiAnnual          Float?
+  infraAnnual           Float?
+  integrationOnetime    Float?
+  testingOnetime        Float?
+  changeMgmtOnetime     Float?
+  maintenanceAnnual     Float?
+  monitoringAnnual      Float?
+  hitlLaborAnnual       Float?
+  totalOnetime          Float?
+  totalAnnualOpex       Float?
+  netAnnualBenefit      Float?
+  paybackMonths         Float?
+  year1Roi              Float?
+  npv3yr                Float?
+
+  useCase UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model EffortEstimate {
+  id                   String           @id @default(cuid())
+  useCaseId            String           @unique
+  tenantId             String
+  dataEngineeringHrs   Float?
+  integrationHrs       Float?
+  aiDevelopmentHrs     Float?
+  securityComplianceHrs Float?
+  testingHrs           Float?
+  infrastructureHrs    Float?
+  changeMgmtHrs        Float?
+  totalEstimatedHrs    Float?
+  calculatedCostBand   CostBand?
+  estMonthlyRunCost    Float?
+  confidenceLevel      ConfidenceLevel?
+  assumptions          Json?
+  version              Int              @default(1)
+  createdById          String?
+  lastCalculatedAt     DateTime?
+
+  useCase   UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("EffortEstimateCreatedBy", fields: [createdById], references: [id])
+
+  @@index([tenantId])
+}
+
+model MandatoryControl {
+  id                   String        @id @default(cuid())
+  useCaseId            String
+  tenantId             String
+  controlCode          String
+  controlName          String
+  controlDescription   String?
+  triggeredBy          String?
+  status               ControlStatus @default(REQUIRED)
+  waiverApprovedById   String?
+  waiverJustification  String?
+  implementationNotes  String?
+  verifiedById         String?
+  verifiedAt           DateTime?
+
+  useCase            UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  tenant             Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  waiverApprovedBy   User?   @relation("MandatoryControlWaiverApprovedBy", fields: [waiverApprovedById], references: [id])
+  verifiedBy         User?   @relation("MandatoryControlVerifiedBy", fields: [verifiedById], references: [id])
+
+  @@index([tenantId])
+  @@index([useCaseId])
+}
+
+// ─── Scoring model ───────────────────────────────────────────────────────────
+
+model ScoringModel {
+  id                        String   @id @default(cuid())
+  tenantId                  String
+  name                      String
+  isDefault                 Boolean  @default(false)
+  valueWeightInPriority     Float    @default(0.5)
+  feasibilityWeightInPriority Float  @default(0.5)
+  version                   Int      @default(1)
+  createdById               String?
+  createdAt                 DateTime @default(now())
+  isActive                  Boolean  @default(true)
+
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy             User?                  @relation("ScoringModelCreatedBy", fields: [createdById], references: [id])
+  axes                  ScoringAxis[]
+  dimensions            FeasibilityDimension[]
+  riskTiers             RiskTierConfig[]
+  versions              ScoringModelVersion[]
+  weightChangeProposals WeightChangeProposal[]
+
+  @@index([tenantId])
+}
+
+model ScoringAxis {
+  id           String          @id @default(cuid())
+  modelId      String
+  axisName     String
+  axisType     ScoringAxisType
+  displayOrder Int             @default(0)
+
+  model   ScoringModel    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  drivers ScoringDriver[]
+
+  @@index([modelId])
+}
+
+model ScoringDriver {
+  id                 String  @id @default(cuid())
+  axisId             String
+  driverName         String
+  weight             Float
+  anchorText1        String?
+  anchorText3        String?
+  anchorText5        String?
+  intakeFeedSections String?
+  displayOrder       Int     @default(0)
+
+  axis       ScoringAxis @relation(fields: [axisId], references: [id], onDelete: Cascade)
+  axisScores AxisScore[]
+
+  @@index([axisId])
+}
+
+model AxisScore {
+  id            String    @id @default(cuid())
+  useCaseId     String
+  driverId      String
+  score         Int
+  evidenceNotes String?
+  scoredById    String?
+  scoredAt      DateTime?
+  versionId     String?
+
+  useCase  UseCase              @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  driver   ScoringDriver        @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  scoredBy User?                @relation("AxisScoreScoredBy", fields: [scoredById], references: [id])
+  version  ScoringModelVersion? @relation(fields: [versionId], references: [id])
+
+  @@index([useCaseId])
+  @@index([driverId])
+}
+
+model RiskTierConfig {
+  id                String  @id @default(cuid())
+  modelId           String
+  tierCode          String
+  tierName          String
+  upperBound        Float
+  multiplier        Float
+  controlsInherited String?
+  displayOrder      Int     @default(0)
+
+  model ScoringModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@index([modelId])
+}
+
+model FeasibilityDimension {
+  id            String  @id @default(cuid())
+  modelId       String
+  dimensionCode String
+  dimensionName String
+  weight        Float
+  rubricText    String?
+  displayOrder  Int     @default(0)
+
+  model     ScoringModel          @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  questions FeasibilityQuestion[]
+
+  @@index([modelId])
+}
+
+model FeasibilityQuestion {
+  id             String  @id @default(cuid())
+  dimensionId    String
+  questionText   String
+  isAiGenerated  Boolean @default(false)
+  isActive       Boolean @default(true)
+  displayOrder   Int     @default(0)
+
+  dimension    FeasibilityDimension    @relation(fields: [dimensionId], references: [id], onDelete: Cascade)
+  assessments  FeasibilityAssessment[]
+
+  @@index([dimensionId])
+}
+
+model FeasibilityAssessment {
+  id            String    @id @default(cuid())
+  useCaseId     String
+  questionId    String
+  score         Int?
+  evidenceNotes String?
+  scoredById    String?
+  scoredAt      DateTime?
+
+  useCase  UseCase             @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  question FeasibilityQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  scoredBy User?               @relation("FeasibilityAssessmentScoredBy", fields: [scoredById], references: [id])
+
+  @@index([useCaseId])
+  @@index([questionId])
+}
+
+model HardGate {
+  id                 String    @id @default(cuid())
+  useCaseId          String
+  tenantId           String
+  gateCode           String
+  gateName           String
+  conditionText      String?
+  result             Boolean?
+  evidenceNotes      String?
+  autoPopulatedFrom  String?
+  reviewedById       String?
+  reviewedAt         DateTime?
+
+  useCase    UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  tenant     Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reviewedBy User?   @relation("HardGateReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([tenantId])
+  @@index([useCaseId])
+}
+
+model SuccessCriteria {
+  id                String                 @id @default(cuid())
+  useCaseId         String
+  tenantId          String
+  metricName        String
+  metricType        String?
+  currentBaseline   Float?
+  minThreshold      Float?
+  target            Float?
+  stretchGoal       Float?
+  actualResult      Float?
+  measurementMethod String?
+  status            SuccessCriteriaStatus?
+  measuredAt        DateTime?
+
+  useCase UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([useCaseId])
+}
+
+model LifecycleEvent {
+  id                String         @id @default(cuid())
+  useCaseId         String
+  tenantId          String
+  fromStage         LifecycleStage
+  toStage           LifecycleStage
+  transitionedById  String
+  transitionedAt    DateTime       @default(now())
+  notes             String?
+  approvalRequired  Boolean?
+  approvedById      String?
+  approvalAt        DateTime?
+
+  useCase        UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  tenant         Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transitionedBy User    @relation("LifecycleEventTransitionedBy", fields: [transitionedById], references: [id])
+  approvedBy     User?   @relation("LifecycleEventApprovedBy", fields: [approvedById], references: [id])
+
+  @@index([tenantId])
+  @@index([useCaseId])
+}
+
+model ProfileReview {
+  id                  String              @id @default(cuid())
+  useCaseId           String
+  tenantId            String
+  section             ProfileSection
+  assignedToId        String?
+  status              ProfileReviewStatus @default(PENDING)
+  reviewNotes         String?
+  reviewedAt          DateTime?
+  infoRequestDetails  String?
+
+  useCase    UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  tenant     Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignedTo User?   @relation("ProfileReviewAssignedTo", fields: [assignedToId], references: [id])
+
+  @@index([tenantId])
+  @@index([useCaseId])
+}
+
+model ActionItem {
+  id                String    @id @default(cuid())
+  useCaseId         String
+  tenantId          String
+  recommendedAction String?
+  owner             String?
+  followUpDate      DateTime?
+  status            String?
+  completedAt       DateTime?
+  notes             String?
+
+  useCase UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([useCaseId])
+}
+
+model ScoringModelVersion {
+  id                          String                    @id @default(cuid())
+  modelId                     String
+  tenantId                    String
+  versionNumber               Int
+  status                      ScoringModelVersionStatus @default(DRAFT)
+  effectiveDate               DateTime?
+  supersededDate              DateTime?
+  createdById                 String?
+  createdAt                   DateTime                  @default(now())
+  changeSummary               String?
+  changeReason                String?
+  valueDriversJson            Json?
+  feasibilityDriversJson      Json?
+  riskDriversJson             Json?
+  valueWeightInPriority       Float
+  feasibilityWeightInPriority Float
+  riskTierConfigJson          Json?
+
+  model              ScoringModel      @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy          User?             @relation("ScoringModelVersionCreatedBy", fields: [createdById], references: [id])
+  snapshots          ScoringSnapshot[]
+  axisScores         AxisScore[]
+  useCasesOnVersion  UseCase[]         @relation("UseCaseCurrentScoringVersion")
+
+  @@index([tenantId])
+  @@index([modelId])
+}
+
+model ScoringSnapshot {
+  id               String    @id @default(cuid())
+  useCaseId        String
+  tenantId         String
+  versionId        String
+  snapshotDate     DateTime  @default(now())
+  valueScore       Float
+  feasibilityScore Float
+  riskScore        Float
+  riskTier         RiskTier
+  tierMultiplier   Float
+  priorityScore    Float
+  rank             Int
+
+  useCase UseCase             @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  tenant  Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  version ScoringModelVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([useCaseId])
+  @@index([versionId])
+}
+
+model WeightChangeProposal {
+  id                              String               @id @default(cuid())
+  modelId                         String
+  tenantId                        String
+  proposedById                    String
+  proposedAt                      DateTime             @default(now())
+  status                          WeightProposalStatus @default(PROPOSED)
+  reason                          String?
+  proposedValueDriversJson        Json?
+  proposedFeasibilityDriversJson  Json?
+  proposedRiskDriversJson         Json?
+  proposedValueWeight             Float?
+  proposedFeasibilityWeight       Float?
+  impactPreviewJson               Json?
+  resolvedById                    String?
+  resolvedAt                      DateTime?
+  resolutionNotes                 String?
+
+  model      ScoringModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  proposedBy User         @relation("WeightChangeProposalProposedBy", fields: [proposedById], references: [id])
+  resolvedBy User?        @relation("WeightChangeProposalResolvedBy", fields: [resolvedById], references: [id])
+
+  @@index([tenantId])
+  @@index([modelId])
+}
+
+// ─── Notifications & audit ───────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  userId    String
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String?
+  userId     String?
+  partnerId  String?
+  entityType String
+  entityId   String
+  action     String
+  beforeJson Json?
+  afterJson  Json?
+  timestamp  DateTime @default(now())
+
+  tenant  Tenant?  @relation(fields: [tenantId], references: [id])
+  user    User?    @relation(fields: [userId], references: [id])
+  partner Partner? @relation(fields: [partnerId], references: [id])
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([partnerId])
+  @@index([entityType, entityId])
+}

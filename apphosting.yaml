@@ -1,0 +1,33 @@
+# Firebase App Hosting configuration for CaseForge (Next.js standalone)
+# Deploy: firebase apphosting:backends:create / firebase deploy
+# Live URL target: https://caseforge.web.app
+
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  minInstances: 0
+  maxInstances: 4
+  concurrency: 80
+
+env:
+  - variable: NODE_ENV
+    value: production
+  - variable: NEXTAUTH_URL
+    value: https://caseforge.web.app
+  - variable: DATABASE_URL
+    secret: DATABASE_URL
+  - variable: AUTH_SECRET
+    secret: AUTH_SECRET
+  - variable: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+    availability: [RUNTIME]
+  - variable: RESEND_API_KEY
+    secret: RESEND_API_KEY
+    availability: [RUNTIME]
+  - variable: CASEFORGE_API_KEY
+    secret: CASEFORGE_API_KEY
+    availability: [RUNTIME]
+
+scripts:
+  buildCommand: npm ci && npx prisma generate && npm run build
+  runCommand: node server.js

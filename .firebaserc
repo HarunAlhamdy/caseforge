@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "caseforge"
+  },
+  "targets": {
+    "caseforge": {
+      "hosting": {
+        "caseforge": ["caseforge"]
+      }
+    }
+  }
+}
