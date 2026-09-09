@@ -55,12 +55,9 @@ export function getSectionCompletionStatus(
   if (isSectionHidden(sectionId, config)) return "complete";
 
   const mandatory = getSectionMandatoryFields(sectionId, config);
-  const sectionHasAnyData = mandatory.some((field) =>
-    hasValue(getFieldValue(values, field)),
-  );
 
   if (mandatory.length === 0) {
-    return sectionHasAnyData ? "complete" : "empty";
+    return "complete";
   }
 
   const filledMandatory = mandatory.filter((field) =>

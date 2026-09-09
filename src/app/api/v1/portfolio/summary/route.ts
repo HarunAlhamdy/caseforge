@@ -2,13 +2,24 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/server/db/client";
 import { getDashboardSummary } from "@/server/services/dashboard-service";
 
-const API_KEY = process.env.CASEFORGE_API_KEY ?? "dev-api-key-change-me";
-
-export async function GET(request: Request) {
+function requireApiKey(request: Request): NextResponse | null {
+  const configured = process.env.CASEFORGE_API_KEY;
+  if (!configured) {
+    return NextResponse.json(
+      { error: "API key not configured" },
+      { status: 503 },
+    );
+  }
   const key = request.headers.get("x-api-key");
-  if (key !== API_KEY) {
+  if (key !== configured) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  return null;
+}
+
+export async function GET(request: Request) {
+  const authError = requireApiKey(request);
+  if (authError) return authError;
 
   const tenantHeader = request.headers.get("x-tenant-id");
   if (!tenantHeader) {

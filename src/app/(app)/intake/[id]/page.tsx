@@ -4,8 +4,6 @@ import { useParams } from "next/navigation";
 import { trpc } from "@/trpc/react";
 import { AppPage } from "@/components/layout/AppPage";
 import { IntakeWizard } from "@/components/intake/IntakeWizard";
-import { Button } from "@/components/ui/Button";
-import Link from "next/link";
 
 export default function Page() {
   const params = useParams<{ id: string }>();
@@ -45,13 +43,6 @@ export default function Page() {
         initialValues={data.intakeValues}
         readOnly={!editable}
       />
-      {editable ? (
-        <div className="mt-4">
-          <Link href={`/intake/${data.id}/review`}>
-            <Button>Review & Submit</Button>
-          </Link>
-        </div>
-      ) : null}
     </AppPage>
   );
 }

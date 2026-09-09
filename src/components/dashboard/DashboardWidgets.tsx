@@ -17,9 +17,25 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import {
+  Activity,
+  BarChart2,
+  GitBranch,
+  Layers,
+  ListOrdered,
+  Map,
+  ShieldCheck,
+  TrendingUp,
+  Waves,
+  Zap,
+  FileDown,
+  Clock,
+} from "lucide-react";
 import { trpc } from "@/trpc/react";
-import { CHART_COLORS, chartTooltipStyle, emptyChartMessage } from "./chart-theme";
+import { CHART_COLORS, chartTooltipStyle } from "./chart-theme";
 import { Button } from "@/components/ui/Button";
+import { KpiCard } from "./KpiCard";
+import { WidgetShell, WidgetEmpty } from "./WidgetShell";
 
 function downloadBase64(base64: string, fileName: string) {
   const link = document.createElement("a");
@@ -38,107 +54,130 @@ export function DashboardWidgets() {
   });
 
   if (isLoading) {
-    return <p className="text-sm text-slate-500">Loading dashboard…</p>;
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-32 animate-pulse rounded-2xl bg-stone-100" />
+        ))}
+      </div>
+    );
   }
 
   if (!data) {
-    return emptyChartMessage("portfolio dashboard");
+    return (
+      <div className="flex h-64 items-center justify-center rounded-2xl border border-stone-200 bg-white text-sm text-stone-400">
+        No dashboard data available.
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
+      {/* Export actions */}
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="secondary"
+          size="sm"
           onClick={() => exportPortfolio.mutate()}
           disabled={exportPortfolio.isLoading}
         >
-          Export portfolio (xlsx)
+          <FileDown className="h-4 w-4" aria-hidden />
+          Portfolio (xlsx)
         </Button>
         <Button
           variant="secondary"
+          size="sm"
           onClick={() => exportGate.mutate()}
           disabled={exportGate.isLoading}
         >
-          Export gate report (xlsx)
+          <FileDown className="h-4 w-4" aria-hidden />
+          Gate report (xlsx)
         </Button>
       </div>
 
+      {/* KPI row */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          ["Active use cases", data.totalActive],
-          ["Scored (scatter)", data.scatter.length],
-          ["Stages with cases", data.stageBar.length],
-          ["Recent events", data.recentActivity.length],
-        ].map(([label, val]) => (
-          <div key={label as string} className="rounded-lg border bg-white p-4">
-            <p className="text-xs uppercase text-slate-500">{label}</p>
-            <p className="text-2xl font-bold text-slate-900">{val}</p>
-          </div>
-        ))}
+        <KpiCard label="Active use cases" value={data.totalActive} icon={Zap} trend="Across all stages" />
+        <KpiCard label="Scored use cases" value={data.scatter.length} icon={BarChart2} trend="Value × feasibility" trendUp={data.scatter.length > 0} />
+        <KpiCard label="Pipeline stages" value={data.stageBar.length} icon={GitBranch} />
+        <KpiCard label="Recent events" value={data.recentActivity.length} icon={Activity} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <WidgetCard title="1. Stage funnel">
+      {/* Chart grid */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        {/* 1. Stage funnel */}
+        <WidgetShell title="Stage funnel" icon={Layers}>
           {data.funnel.some((f) => f.count > 0) ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.funnel.filter((f) => f.count > 0)} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis dataKey="label" type="category" width={120} tick={{ fontSize: 10 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f4" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "#78716c" }} />
+                  <YAxis dataKey="label" type="category" width={130} tick={{ fontSize: 10, fill: "#78716c" }} />
                   <Tooltip {...chartTooltipStyle()} />
                   <Bar dataKey="count" fill={CHART_COLORS.primary} radius={4} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            emptyChartMessage("stage funnel")
+            <WidgetEmpty label="stage funnel" />
           )}
-        </WidgetCard>
+        </WidgetShell>
 
-        <WidgetCard title="2. Value vs feasibility scatter">
+        {/* 2. Value vs feasibility */}
+        <WidgetShell title="Value vs. feasibility" icon={TrendingUp}>
           {data.scatter.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="value" name="Value" tick={{ fontSize: 11 }} />
-                  <YAxis dataKey="feasibility" name="Feasibility" tick={{ fontSize: 11 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f4" />
+                  <XAxis dataKey="value" name="Value" tick={{ fontSize: 11, fill: "#78716c" }} label={{ value: "Value", position: "insideBottom", offset: -4, fontSize: 10 }} />
+                  <YAxis dataKey="feasibility" name="Feasibility" tick={{ fontSize: 11, fill: "#78716c" }} />
                   <Tooltip {...chartTooltipStyle()} cursor={{ strokeDasharray: "3 3" }} />
                   <Scatter data={data.scatter} fill={CHART_COLORS.accent} />
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            emptyChartMessage("scatter plot")
+            <WidgetEmpty label="scatter" />
           )}
-        </WidgetCard>
+        </WidgetShell>
 
-        <WidgetCard title="3. Stage distribution">
+        {/* 3. Stage distribution */}
+        <WidgetShell title="Stage distribution" icon={BarChart2}>
           {data.stageBar.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.stageBar}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="label" tick={{ fontSize: 9 }} angle={-25} textAnchor="end" height={70} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f4" />
+                  <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#78716c" }} angle={-25} textAnchor="end" height={70} />
+                  <YAxis tick={{ fontSize: 11, fill: "#78716c" }} />
                   <Tooltip {...chartTooltipStyle()} />
-                  <Bar dataKey="count" fill={CHART_COLORS.primary} />
+                  <Bar dataKey="count" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            emptyChartMessage("stage bar chart")
+            <WidgetEmpty label="stage distribution" />
           )}
-        </WidgetCard>
+        </WidgetShell>
 
-        <WidgetCard title="4. Risk tier pie">
+        {/* 4. Risk tier pie */}
+        <WidgetShell title="Risk tier breakdown" icon={ShieldCheck}>
           {data.riskTierPie.some((d) => d.value > 0) ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={data.riskTierPie.filter((d) => d.value > 0)} dataKey="value" nameKey="name" label>
+                  <Pie
+                    data={data.riskTierPie.filter((d) => d.value > 0)}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={50}
+                    outerRadius={90}
+                    paddingAngle={3}
+                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
                     {data.riskTierPie.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS.palette[i % CHART_COLORS.palette.length]} />
                     ))}
@@ -149,50 +188,59 @@ export function DashboardWidgets() {
               </ResponsiveContainer>
             </div>
           ) : (
-            emptyChartMessage("risk tiers")
+            <WidgetEmpty label="risk tiers" />
           )}
-        </WidgetCard>
+        </WidgetShell>
 
-        <WidgetCard title="5. Priority trend">
+        {/* 5. Priority trend */}
+        <WidgetShell title="Priority score trend" icon={TrendingUp}>
           {data.priorityLine.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data.priorityLine}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f4" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#78716c" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#78716c" }} />
                   <Tooltip {...chartTooltipStyle()} />
-                  <Line type="monotone" dataKey="avgPriority" stroke={CHART_COLORS.primary} strokeWidth={2} />
+                  <Line
+                    type="monotone"
+                    dataKey="avgPriority"
+                    stroke={CHART_COLORS.primary}
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: CHART_COLORS.primary }}
+                    activeDot={{ r: 5 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            emptyChartMessage("priority trend")
+            <WidgetEmpty label="priority trend" />
           )}
-        </WidgetCard>
+        </WidgetShell>
 
-        <WidgetCard title="6. Heatmap grid (unit × stage)">
+        {/* 6. Heatmap grid */}
+        <WidgetShell title="Unit × stage heatmap" icon={Map}>
           {data.heatmap.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full text-xs">
                 <thead>
-                  <tr>
-                    <th className="p-2 text-left">Unit</th>
-                    <th className="p-2 text-left">Stage</th>
-                    <th className="p-2 text-right">Count</th>
+                  <tr className="border-b border-stone-100">
+                    <th className="pb-2 text-left text-stone-400 font-semibold uppercase tracking-wider">Unit</th>
+                    <th className="pb-2 text-left text-stone-400 font-semibold uppercase tracking-wider">Stage</th>
+                    <th className="pb-2 text-right text-stone-400 font-semibold uppercase tracking-wider">Count</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.heatmap.map((cell, i) => (
-                    <tr key={i} className="border-t">
-                      <td className="p-2">{cell.unit}</td>
-                      <td className="p-2">{cell.stage}</td>
-                      <td className="p-2 text-right">
+                    <tr key={i} className="border-t border-stone-50">
+                      <td className="py-2 text-stone-700">{cell.unit}</td>
+                      <td className="py-2 text-stone-500">{cell.stage}</td>
+                      <td className="py-2 text-right">
                         <span
-                          className="inline-block rounded px-2 py-0.5 text-white"
+                          className="inline-block rounded-lg px-2 py-0.5 text-white text-xs font-semibold"
                           style={{
                             backgroundColor: CHART_COLORS.primary,
-                            opacity: Math.min(1, 0.4 + cell.count * 0.15),
+                            opacity: Math.min(1, 0.5 + cell.count * 0.15),
                           }}
                         >
                           {cell.count}
@@ -204,123 +252,126 @@ export function DashboardWidgets() {
               </table>
             </div>
           ) : (
-            emptyChartMessage("heatmap")
+            <WidgetEmpty label="heatmap" />
           )}
-        </WidgetCard>
+        </WidgetShell>
 
-        <WidgetCard title="7. Top use cases">
+        {/* 7. Top use cases */}
+        <WidgetShell title="Top use cases" icon={ListOrdered}>
           {data.topUseCases.length > 0 ? (
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="text-left text-slate-500">
-                  <th className="p-2">Rank</th>
-                  <th className="p-2">Title</th>
-                  <th className="p-2">Priority</th>
+                <tr className="border-b border-stone-100">
+                  <th className="pb-2 text-left text-xs font-semibold uppercase tracking-wider text-stone-400">Rank</th>
+                  <th className="pb-2 text-left text-xs font-semibold uppercase tracking-wider text-stone-400">Title</th>
+                  <th className="pb-2 text-right text-xs font-semibold uppercase tracking-wider text-stone-400">Priority</th>
                 </tr>
               </thead>
               <tbody>
                 {data.topUseCases.map((uc) => (
-                  <tr key={uc.id} className="border-t">
-                    <td className="p-2">{uc.rank ?? "—"}</td>
-                    <td className="p-2">{uc.title}</td>
-                    <td className="p-2">{uc.priority ?? "—"}</td>
+                  <tr key={uc.id} className="border-t border-stone-50">
+                    <td className="py-2 font-semibold text-teal-600">{uc.rank ?? "—"}</td>
+                    <td className="py-2 text-stone-800">{uc.title}</td>
+                    <td className="py-2 text-right text-stone-500">{uc.priority ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
-            emptyChartMessage("top use cases")
+            <WidgetEmpty label="top use cases" />
           )}
-        </WidgetCard>
+        </WidgetShell>
 
-        <WidgetCard title="8. Data readiness">
+        {/* 8. Data readiness */}
+        <WidgetShell title="Data readiness" icon={ShieldCheck}>
           {data.readinessPie.some((d) => d.value > 0) ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={data.readinessPie.filter((d) => d.value > 0)} dataKey="value" nameKey="name" label>
+                  <Pie
+                    data={data.readinessPie.filter((d) => d.value > 0)}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={50}
+                    outerRadius={90}
+                    paddingAngle={3}
+                  >
                     {data.readinessPie.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS.palette[i % CHART_COLORS.palette.length]} />
                     ))}
                   </Pie>
                   <Tooltip {...chartTooltipStyle()} />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            emptyChartMessage("data readiness")
+            <WidgetEmpty label="data readiness" />
           )}
-        </WidgetCard>
+        </WidgetShell>
 
-        <WidgetCard title="9. Gate decisions">
+        {/* 9. Gate decisions */}
+        <WidgetShell title="Gate decisions" icon={ShieldCheck}>
           {data.gateBar.some((d) => d.value > 0) ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.gateBar.filter((d) => d.value > 0)}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f4" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#78716c" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#78716c" }} />
                   <Tooltip {...chartTooltipStyle()} />
-                  <Bar dataKey="value" fill={CHART_COLORS.accent} />
+                  <Bar dataKey="value" fill={CHART_COLORS.accent} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            emptyChartMessage("gate decisions")
+            <WidgetEmpty label="gate decisions" />
           )}
-        </WidgetCard>
+        </WidgetShell>
 
-        <WidgetCard title="10. Wave distribution">
+        {/* 10. Wave distribution */}
+        <WidgetShell title="Wave distribution" icon={Waves}>
           {data.waveBar.some((d) => d.value > 0) ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.waveBar.filter((d) => d.value > 0)}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f4" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#78716c" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#78716c" }} />
                   <Tooltip {...chartTooltipStyle()} />
-                  <Bar dataKey="value" fill={CHART_COLORS.primary} />
+                  <Bar dataKey="value" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            emptyChartMessage("waves")
+            <WidgetEmpty label="wave distribution" />
           )}
-        </WidgetCard>
+        </WidgetShell>
 
-        <WidgetCard title="11. Recent activity">
+        {/* 11. Recent activity */}
+        <WidgetShell title="Recent activity" icon={Clock}>
           {data.recentActivity.length > 0 ? (
-            <ul className="max-h-64 space-y-2 overflow-y-auto text-sm">
+            <ul className="max-h-64 space-y-3 overflow-y-auto">
               {data.recentActivity.map((e) => (
-                <li key={e.id} className="border-b border-slate-100 pb-2">
-                  <p className="font-medium">{e.useCaseTitle}</p>
-                  <p className="text-xs text-slate-500">
-                    {e.fromStage} → {e.toStage} · {e.by} ·{" "}
-                    {new Date(e.at).toLocaleDateString()}
-                  </p>
+                <li key={e.id} className="flex items-start gap-3 border-b border-stone-50 pb-3 last:border-0">
+                  <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-teal-50">
+                    <Activity className="h-3 w-3 text-teal-600" aria-hidden />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-stone-800">{e.useCaseTitle}</p>
+                    <p className="text-xs text-stone-400">
+                      {e.fromStage} → {e.toStage} · {e.by} ·{" "}
+                      {new Date(e.at).toLocaleDateString()}
+                    </p>
+                  </div>
                 </li>
               ))}
             </ul>
           ) : (
-            emptyChartMessage("recent activity")
+            <WidgetEmpty label="recent activity" />
           )}
-        </WidgetCard>
+        </WidgetShell>
       </div>
-    </div>
-  );
-}
-
-function WidgetCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <h3 className="mb-3 text-sm font-semibold text-slate-700">{title}</h3>
-      {children}
     </div>
   );
 }

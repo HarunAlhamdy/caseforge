@@ -104,4 +104,18 @@ export const tenantRouter = createTRPCRouter({
         theme,
       };
     }),
+
+  myAccess: protectedProcedure.query(({ ctx }) => {
+    const access = ctx.access!;
+    return {
+      userId: access.userId,
+      tenantId: access.tenantId,
+      effectiveRole: access.effectiveRole,
+      partnerId: access.partnerId,
+      partnerRole: access.partnerRole,
+      isPartnerUser: access.isPartnerUser,
+      accessLevel: access.accessLevel,
+      accessibleTenantIds: access.accessibleTenantIds,
+    };
+  }),
 });

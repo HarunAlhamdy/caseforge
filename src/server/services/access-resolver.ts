@@ -17,12 +17,24 @@ export class AccessResolver {
     }
 
     const userId = user.id;
-    const sessionRole = user.role ?? SecurityRoleEnum.VIEWER;
+    const dbUser = await this.db.user.findUnique({
+      where: { id: userId },
+      select: { isActive: true, role: true, tenantId: true },
+    });
+    if (!dbUser?.isActive) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "Account is disabled",
+      });
+    }
 
-    if (sessionRole === SecurityRoleEnum.PLATFORM_SUPER_ADMIN) {
+    // Prefer DB role over JWT so demotions take effect immediately
+    const dbRole = dbUser.role;
+
+    if (dbRole === SecurityRoleEnum.PLATFORM_SUPER_ADMIN) {
       return {
         userId,
-        tenantId: requestedTenantId ?? user.tenantId ?? null,
+        tenantId: requestedTenantId ?? dbUser.tenantId ?? user.tenantId ?? null,
         effectiveRole: SecurityRoleEnum.PLATFORM_SUPER_ADMIN,
         partnerId: null,
         partnerRole: null,
@@ -64,7 +76,7 @@ export class AccessResolver {
 
       const effectiveTenantId = this.resolvePartnerTenantId(
         requestedTenantId,
-        user.tenantId,
+        dbUser.tenantId ?? user.tenantId,
         accessibleTenantIds,
       );
 
@@ -86,7 +98,7 @@ export class AccessResolver {
       };
     }
 
-    const tenantId = user.tenantId ?? null;
+    const tenantId = dbUser.tenantId ?? user.tenantId ?? null;
     if (!tenantId) {
       throw new TRPCError({
         code: "FORBIDDEN",
@@ -108,7 +120,7 @@ export class AccessResolver {
     return {
       userId,
       tenantId,
-      effectiveRole: sessionRole,
+      effectiveRole: dbRole,
       partnerId: null,
       partnerRole: null,
       isPartnerUser: false,

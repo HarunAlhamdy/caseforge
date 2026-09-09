@@ -8,6 +8,7 @@ export default function Page() {
     <AppPage
       title="Dashboard"
       description="Overview of active use cases, pipeline health, and stage distribution across your portfolio."
+      hideBack
     >
       <DashboardWidgets />
     </AppPage>

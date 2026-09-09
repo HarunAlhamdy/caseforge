@@ -39,11 +39,72 @@ function isStubPrisma(clientIndexPath) {
   return text.includes("did not initialize yet");
 }
 
+function parseEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return {};
+  const out = {};
+  for (const line of fs.readFileSync(filePath, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq <= 0) continue;
+    out[trimmed.slice(0, eq)] = trimmed.slice(eq + 1);
+  }
+  return out;
+}
+
+/** Prefer .env.production over root .env for Cloud Function runtime secrets. */
+function patchFunctionsEnv(reason) {
+  const envPath = path.join(functionsDir, ".env");
+  if (!fs.existsSync(functionsDir)) return false;
+  const prod = parseEnvFile(path.join(root, ".env.production"));
+  const rootEnv = parseEnvFile(path.join(root, ".env"));
+  const current = parseEnvFile(envPath);
+  const merged = { ...rootEnv, ...current, ...prod };
+  // Never ship localhost DB to Cloud Functions
+  const db = merged.DATABASE_URL || "";
+  if (/localhost|127\.0\.0\.1/.test(db)) {
+    console.warn(
+      `[env-patch] ${reason}: refusing localhost DATABASE_URL — set .env.production`,
+    );
+    return false;
+  }
+  if (!merged.DATABASE_URL) return false;
+  const lines = Object.entries(merged)
+    .map(([k, v]) => `${k}=${v}`)
+    .sort()
+    .join("\n");
+  const next = lines + "\n";
+  const prev = fs.existsSync(envPath) ? fs.readFileSync(envPath, "utf8") : "";
+  if (prev === next) return true;
+  fs.writeFileSync(envPath, next);
+  console.log(`[env-patch] ${reason}: wrote functions .env (DATABASE_URL host ok)`);
+  return true;
+}
+
 function patchFunctionsPrisma(reason) {
   if (!fs.existsSync(functionsDir)) return false;
 
-  fs.mkdirSync(path.join(functionsDir, "prisma"), { recursive: true });
-  fs.copyFileSync(schemaSrc, path.join(functionsDir, "prisma", "schema.prisma"));
+  try {
+    patchFunctionsEnv(reason);
+  } catch {
+    /* ignore mid-build env races */
+  }
+
+  try {
+    fs.mkdirSync(path.join(functionsDir, "prisma"), { recursive: true });
+    if (fs.existsSync(schemaSrc)) {
+      fs.copyFileSync(
+        schemaSrc,
+        path.join(functionsDir, "prisma", "schema.prisma"),
+      );
+    }
+  } catch (err) {
+    console.warn(
+      `[prisma-patch] ${reason}: schema copy skipped`,
+      err && err.message ? err.message : err,
+    );
+    return false;
+  }
 
   const clientIndex = path.join(
     functionsDir,

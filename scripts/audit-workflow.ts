@@ -49,7 +49,7 @@ async function httpJson(
       const part = c.split(";")[0]!;
       merged.set(part.split("=")[0]!, part);
     }
-    init.cookieJar.cookie = [...merged.values()].join("; ");
+    init.cookieJar.cookie = Array.from(merged.values()).join("; ");
   }
   const text = await res.text();
   let json: unknown = null;
@@ -115,44 +115,18 @@ async function loginCredentials(
   password: string,
   cookieJar: { cookie?: string },
 ) {
-  const csrf = await httpJson(base, "/api/auth/csrf", { cookieJar });
-  const csrfToken =
-    csrf.json && typeof csrf.json === "object" && "csrfToken" in csrf.json
-      ? String((csrf.json as { csrfToken: string }).csrfToken)
-      : "";
-  if (!csrfToken) throw new Error("No CSRF token");
-
-  const body = new URLSearchParams({
-    csrfToken,
-    email,
-    password,
-    callbackUrl: `${base}/dashboard`,
-    json: "true",
-  });
-
-  const res = await fetch(`${base}/api/auth/callback/credentials`, {
+  const { res, json, text } = await httpJson(base, "/api/auth/login", {
     method: "POST",
-    headers: {
-      "content-type": "application/x-www-form-urlencoded",
-      cookie: cookieJar.cookie || "",
-    },
-    body,
-    redirect: "manual",
+    cookieJar,
+    body: JSON.stringify({ email, password }),
   });
 
-  const setCookie = res.headers.getSetCookie?.() ?? [];
-  const merged = new Map<string, string>();
-  for (const c of (cookieJar.cookie || "").split("; ").filter(Boolean)) {
-    merged.set(c.split("=")[0]!, c);
+  if (!res.ok) {
+    throw new Error(`login HTTP ${res.status}: ${text.slice(0, 200)}`);
   }
-  for (const c of setCookie) {
-    const part = c.split(";")[0]!;
-    merged.set(part.split("=")[0]!, part);
-  }
-  cookieJar.cookie = [...merged.values()].join("; ");
 
   const session = await httpJson(base, "/api/auth/session", { cookieJar });
-  return { loginStatus: res.status, session };
+  return { loginStatus: res.status, session, user: (json as { user?: unknown }).user };
 }
 
 const mandatoryIntake = {

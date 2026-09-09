@@ -148,14 +148,30 @@ export async function buildTransitionContext(
     where: { id: useCaseId },
     include: {
       profileReviews: true,
-      feasibilityAssessments: { take: 1 },
+      feasibilityAssessments: true,
+      mandatoryControls: true,
     },
   });
   if (!useCase) return null;
 
   const profileReviewsComplete =
-    useCase.profileReviews.length === 0 ||
+    useCase.profileReviews.length > 0 &&
     useCase.profileReviews.every((r) => r.status === "APPROVED");
+
+  const feasibilityComplete =
+    useCase.compositeFeasibility != null &&
+    (useCase.feasibilityAssessments?.length ?? 0) > 0;
+
+  const verifiedControls = (useCase.mandatoryControls ?? []).filter(
+    (c) => c.status === "VERIFIED",
+  );
+  const hasControls = (useCase.mandatoryControls ?? []).length > 0;
+  const allControlsVerified =
+    hasControls &&
+    verifiedControls.length === useCase.mandatoryControls.length;
+
+  // Controls must exist and be verified — STRONG_GO alone is not enough
+  const pilotVerified = allControlsVerified;
 
   return {
     useCaseId: useCase.id,
@@ -164,13 +180,12 @@ export async function buildTransitionContext(
     gateDecision: useCase.gateDecision ?? undefined,
     profileReviewsComplete,
     portfolioScored: useCase.priorityScore != null,
-    feasibilityComplete: (useCase.feasibilityAssessments?.length ?? 0) > 0,
+    feasibilityComplete,
     waveAssigned: useCase.wave != null,
-    pilotVerified:
-      useCase.currentStage === "SCALE_UP" ||
-      useCase.currentStage === "PRODUCTION" ||
-      useCase.compositeVerdict === "STRONG_GO",
-    intakeComplete: Boolean(useCase.problemStatement && useCase.proposedSolution),
+    pilotVerified,
+    intakeComplete: Boolean(
+      useCase.problemStatement && useCase.proposedSolution,
+    ),
     useCaseTitle: useCase.title,
   };
 }

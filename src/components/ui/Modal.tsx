@@ -40,7 +40,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
       <button
         type="button"
         aria-label="Close dialog overlay"
-        className="absolute inset-0 bg-slate-900/50"
+        className="absolute inset-0 bg-stone-950/40"
         onClick={onClose}
       />
       <div
@@ -50,26 +50,30 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
         aria-labelledby={titleId}
         tabIndex={-1}
         className={cn(
-          "relative z-10 w-full max-w-lg rounded-xl bg-white p-6 shadow-xl",
+          "relative z-10 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl",
           "focus:outline-none",
           className,
         )}
       >
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 id={titleId} className="text-lg font-semibold text-slate-900">
-            {title}
-          </h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Close dialog"
-            onClick={onClose}
-            className="!px-2"
-          >
-            <X className="h-4 w-4" aria-hidden />
-          </Button>
+        {/* Teal accent bar */}
+        <div className="h-1 w-full bg-teal-500" />
+        <div className="p-6">
+          <div className="mb-4 flex items-start justify-between gap-4">
+            <h2 id={titleId} className="text-lg font-semibold text-stone-900">
+              {title}
+            </h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Close dialog"
+              onClick={onClose}
+              className="!px-2"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </Button>
+          </div>
+          {children}
         </div>
-        {children}
       </div>
     </div>
   );

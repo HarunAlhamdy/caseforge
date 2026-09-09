@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/trpc/react";
 import { Button } from "@/components/ui/Button";
@@ -15,20 +15,21 @@ export function CriteriaPanel({ useCaseId }: { useCaseId: string }) {
     onSuccess: () => void utils.evaluation.getCriteria.invalidate({ useCaseId }),
   });
 
+  useEffect(() => {
+    if (!existing?.length) return;
+    setRows(
+      existing.map((c) => ({
+        metricName: c.metricName,
+        target: c.target != null ? String(c.target) : "",
+      })),
+    );
+  }, [existing]);
+
   return (
     <div className="space-y-4">
       <Link href={`/evaluation/${useCaseId}`} className="text-sm text-brand-primary hover:underline">
         ← Assessment
       </Link>
-      {existing?.length ? (
-        <ul className="text-sm">
-          {existing.map((c) => (
-            <li key={c.id}>
-              {c.metricName} — target {c.target}
-            </li>
-          ))}
-        </ul>
-      ) : null}
       {rows.map((row, i) => (
         <div key={i} className="flex gap-2">
           <input
@@ -57,6 +58,10 @@ export function CriteriaPanel({ useCaseId }: { useCaseId: string }) {
         Add metric
       </Button>
       <Button
+        disabled={
+          save.isPending ||
+          rows.filter((r) => r.metricName.trim()).length === 0
+        }
         onClick={() =>
           save.mutate({
             useCaseId,
@@ -121,20 +126,42 @@ export function ScorecardPanel({ useCaseId }: { useCaseId: string }) {
         value={reason}
         onChange={(e) => setReason(e.target.value)}
       />
+      {decide.error ? (
+        <p className="text-sm text-red-600">{decide.error.message}</p>
+      ) : null}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => decide.mutate({ useCaseId, decision: "APPROVE", reason })}>
+        <Button
+          disabled={reason.trim().length < 10 || decide.isPending}
+          onClick={() => decide.mutate({ useCaseId, decision: "APPROVE", reason })}
+        >
           Approve for Delivery
         </Button>
         <Button
           variant="secondary"
-          onClick={() => decide.mutate({ useCaseId, decision: "CONDITIONAL", reason, waiverNotes: reason })}
+          disabled={reason.trim().length < 10 || decide.isPending}
+          onClick={() =>
+            decide.mutate({
+              useCaseId,
+              decision: "CONDITIONAL",
+              reason,
+              waiverNotes: reason,
+            })
+          }
         >
           Conditional Go
         </Button>
-        <Button variant="secondary" onClick={() => decide.mutate({ useCaseId, decision: "HOLD", reason })}>
+        <Button
+          variant="secondary"
+          disabled={reason.trim().length < 10 || decide.isPending}
+          onClick={() => decide.mutate({ useCaseId, decision: "HOLD", reason })}
+        >
           Place on Hold
         </Button>
-        <Button variant="danger" onClick={() => decide.mutate({ useCaseId, decision: "NO_GO", reason })}>
+        <Button
+          variant="danger"
+          disabled={reason.trim().length < 10 || decide.isPending}
+          onClick={() => decide.mutate({ useCaseId, decision: "NO_GO", reason })}
+        >
           No Go
         </Button>
       </div>

@@ -1,10 +1,6 @@
-import { AppPage } from "@/components/layout/AppPage";
+import { redirect } from "next/navigation";
 
+/** Legacy empty hub — send users to the portfolio picker. */
 export default function Page() {
-  return (
-    <AppPage
-      title="Financial Analysis"
-      description="ROI, NPV, payback, and cost band projections for evaluated use cases."
-    />
-  );
+  redirect("/scoring/portfolio");
 }

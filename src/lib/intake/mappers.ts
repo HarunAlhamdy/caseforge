@@ -23,7 +23,7 @@ export function mapUseCaseToIntakeValues(useCase: UseCase): IntakeFormValues {
     expectedBenefits: useCase.expectedBenefits ?? undefined,
     aiPattern: useCase.aiPattern,
     autonomyLevel: useCase.autonomyLevel,
-    currentProcessDescription: useCase.currentVolume ?? undefined,
+    currentProcessDescription: useCase.currentProcessDescription ?? undefined,
     currentFtes: useCase.currentFtes,
     currentVolume: useCase.currentVolume ?? undefined,
     currentCycleTime: useCase.currentCycleTime ?? undefined,
@@ -37,13 +37,16 @@ export function mapUseCaseToIntakeValues(useCase: UseCase): IntakeFormValues {
     ingestionFrequency: useCase.ingestionFrequency ?? undefined,
     dataVolume: useCase.dataVolume ?? undefined,
     historicalRequired: useCase.historicalRequired,
+    historicalLookback: useCase.historicalLookback ?? undefined,
     dqIssues: useCase.dqIssues ?? undefined,
     remediationNeeded: useCase.remediationNeeded,
+    remediationPlan: useCase.remediationPlan ?? undefined,
     dqOwnership: useCase.dqOwnership ?? undefined,
     businessDomains,
     masterRefData: useCase.masterRefData ?? undefined,
     modelRelationship: useCase.modelRelationship ?? undefined,
     auditabilityRequired: useCase.auditabilityRequired,
+    auditabilityDetail: useCase.auditabilityDetail ?? undefined,
     policyReviewRequired: useCase.policyReviewRequired,
     policyReviewBody: useCase.policyReviewBody ?? undefined,
     ndaStatus: useCase.ndaStatus,
@@ -54,12 +57,14 @@ export function mapUseCaseToIntakeValues(useCase: UseCase): IntakeFormValues {
     dataClassification: useCase.dataClassification,
     accessControlReqs: useCase.accessControlReqs ?? undefined,
     piiCuiPresent: useCase.piiCuiPresent,
+    piiCuiDetail: useCase.piiCuiDetail ?? undefined,
     encryptionReqs,
     govtModelAccess: useCase.govtModelAccess,
     securityReviewStatus: useCase.securityReviewStatus,
     reportingReqs: useCase.reportingReqs ?? undefined,
     endUserPersonas: useCase.endUserPersonas ?? undefined,
     conversationalAiRequired: useCase.conversationalAiRequired,
+    conversationalAiDetail: useCase.conversationalAiDetail ?? undefined,
     accessChannels,
     downstreamConsumption: useCase.downstreamConsumption ?? undefined,
     submitterPriority: useCase.submitterPriority ?? undefined,
@@ -85,7 +90,9 @@ export function intakeValuesToUseCaseData(
     "expectedBenefits",
     "aiPattern",
     "autonomyLevel",
+    "currentProcessDescription",
     "currentFtes",
+    "currentVolume",
     "currentCycleTime",
     "currentErrorRate",
     "annualCost",
@@ -97,12 +104,15 @@ export function intakeValuesToUseCaseData(
     "ingestionFrequency",
     "dataVolume",
     "historicalRequired",
+    "historicalLookback",
     "dqIssues",
     "remediationNeeded",
+    "remediationPlan",
     "dqOwnership",
     "masterRefData",
     "modelRelationship",
     "auditabilityRequired",
+    "auditabilityDetail",
     "policyReviewRequired",
     "policyReviewBody",
     "ndaStatus",
@@ -113,11 +123,13 @@ export function intakeValuesToUseCaseData(
     "dataClassification",
     "accessControlReqs",
     "piiCuiPresent",
+    "piiCuiDetail",
     "govtModelAccess",
     "securityReviewStatus",
     "reportingReqs",
     "endUserPersonas",
     "conversationalAiRequired",
+    "conversationalAiDetail",
     "downstreamConsumption",
     "submitterPriority",
     "submitterComplexity",
@@ -127,16 +139,18 @@ export function intakeValuesToUseCaseData(
 
   for (const key of directMap) {
     if (values[key] !== undefined) {
+      // Don't persist empty title/unit over create fallbacks via partial updates
+      if (
+        (key === "title" || key === "businessUnit") &&
+        typeof values[key] === "string" &&
+        !(values[key] as string).trim()
+      ) {
+        continue;
+      }
       data[key] = values[key];
     }
   }
 
-  if (values.currentProcessDescription !== undefined) {
-    data.currentVolume = values.currentProcessDescription;
-  }
-  if (values.currentVolume !== undefined && !values.currentProcessDescription) {
-    data.currentVolume = values.currentVolume;
-  }
   if (values.businessDomains !== undefined) {
     data.businessDomains = values.businessDomains;
   }
@@ -145,32 +159,6 @@ export function intakeValuesToUseCaseData(
   }
   if (values.accessChannels !== undefined) {
     data.accessChannels = values.accessChannels;
-  }
-
-  if (values.piiCuiDetail !== undefined && values.piiCuiPresent) {
-    const existing = values.accessControlReqs ?? "";
-    data.accessControlReqs = existing
-      ? `${existing}\nPII/CUI: ${values.piiCuiDetail}`
-      : values.piiCuiDetail;
-  }
-
-  if (values.auditabilityDetail !== undefined && values.auditabilityRequired) {
-    data.reportingReqs = values.auditabilityDetail;
-  }
-
-  if (values.remediationPlan !== undefined && values.remediationNeeded) {
-    data.dqIssues = values.dqIssues
-      ? `${values.dqIssues}\nRemediation: ${values.remediationPlan}`
-      : values.remediationPlan;
-  }
-
-  if (
-    values.conversationalAiDetail !== undefined &&
-    values.conversationalAiRequired
-  ) {
-    data.endUserPersonas = values.endUserPersonas
-      ? `${values.endUserPersonas}\nConversational AI: ${values.conversationalAiDetail}`
-      : values.conversationalAiDetail;
   }
 
   return data;

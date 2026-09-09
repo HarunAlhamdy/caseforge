@@ -3,11 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Core */
+  --background: #f3f1ee;
+  --foreground: #1c1917;
+  --surface: #ffffff;
+  --surface-raised: #f7f5f2;
+  --border-warm: #e7e5e4;
+
+  /* Brand */
   --brand-primary: #0f766e;
   --brand-accent: #14b8a6;
+  --brand-light: #f0fdfa;
   --brand-font: Inter, system-ui, sans-serif;
+
+  /* Layout */
   --sidebar-width: 16rem;
 }
 
@@ -15,11 +24,12 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--brand-font);
+  -webkit-font-smoothing: antialiased;
 }
 
 @layer base {
   h1, h2, h3, h4 {
-    @apply text-slate-900;
+    @apply text-stone-900;
   }
 
   a {
@@ -46,5 +56,26 @@ body {
 
   .focus-visible\:ring-brand-accent:focus-visible {
     --tw-ring-color: var(--brand-accent);
+  }
+
+  /*
+   * Dot-grid: adds the texture as a pseudo-element overlay so it
+   * stacks on top of any background color without replacing it.
+   * Children only need relative positioning if they need to appear
+   * above the texture — handle that per-component with relative/z-10.
+   */
+  .dot-grid {
+    position: relative;
+  }
+  .dot-grid::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('/dot-grid.svg');
+    background-repeat: repeat;
+    background-size: 20px 20px;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
   }
 }

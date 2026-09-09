@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckIcon } from "lucide-react";
 import { cn } from "@/lib/utils/format";
 import {
   INTAKE_SECTION_LABELS,
@@ -16,12 +17,6 @@ interface IntakeStepperProps {
   config?: IntakeFormConfig | null;
 }
 
-function statusColor(status: SectionCompletionStatus): string {
-  if (status === "complete") return "bg-emerald-500 border-emerald-500 text-white";
-  if (status === "partial") return "bg-amber-400 border-amber-400 text-white";
-  return "bg-white border-slate-300 text-slate-500";
-}
-
 export function IntakeStepper({
   activeSection,
   onSectionChange,
@@ -29,39 +24,67 @@ export function IntakeStepper({
   config,
 }: IntakeStepperProps) {
   const sections = visibleSections(config);
+  const activeIndex = sections.indexOf(activeSection);
 
   return (
     <nav
-      className="flex gap-2 overflow-x-auto pb-2"
+      className="flex items-center gap-0 overflow-x-auto pb-1"
       aria-label="Intake wizard sections"
     >
       {sections.map((sectionId, index) => {
         const status = sectionStatus[sectionId] ?? "empty";
         const isActive = activeSection === sectionId;
+        const isCompleted = status === "complete";
+        const isPast = index < activeIndex;
+        const isConnectorFilled = isPast || isCompleted;
+
         return (
-          <button
-            key={sectionId}
-            type="button"
-            onClick={() => onSectionChange(sectionId)}
-            className={cn(
-              "flex min-w-[120px] flex-col items-center gap-1 rounded-lg border px-3 py-2 text-left transition-colors",
-              isActive
-                ? "border-brand-primary bg-brand-primary/5"
-                : "border-slate-200 hover:border-slate-300",
-            )}
-          >
-            <span
+          <div key={sectionId} className="flex items-center">
+            {/* Step pill */}
+            <button
+              type="button"
+              onClick={() => onSectionChange(sectionId)}
               className={cn(
-                "flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold",
-                statusColor(status),
+                "flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 whitespace-nowrap",
+                isActive
+                  ? "bg-white border-2 border-teal-600 text-teal-700 shadow-sm"
+                  : isCompleted
+                    ? "bg-teal-600 text-white hover:bg-teal-700"
+                    : status === "partial"
+                      ? "bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-200"
+                      : "bg-stone-100 text-stone-400 hover:bg-stone-200",
               )}
+              aria-current={isActive ? "step" : undefined}
             >
-              {index + 1}
-            </span>
-            <span className="text-xs font-medium text-slate-700">
+              {/* Number or check */}
+              <span
+                className={cn(
+                  "flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold flex-shrink-0",
+                  isActive ? "bg-teal-600 text-white" : "bg-white/20",
+                  !isActive && isCompleted && "bg-white/30",
+                  !isActive && !isCompleted && "bg-stone-300/50 text-stone-600",
+                )}
+              >
+                {isCompleted && !isActive ? (
+                  <CheckIcon className="h-2.5 w-2.5" aria-hidden />
+                ) : (
+                  index + 1
+                )}
+              </span>
               {INTAKE_SECTION_LABELS[sectionId]}
-            </span>
-          </button>
+            </button>
+
+            {/* Connector line between steps */}
+            {index < sections.length - 1 && (
+              <div
+                className={cn(
+                  "mx-1 h-0.5 w-6 flex-shrink-0 rounded-full transition-colors duration-300",
+                  isConnectorFilled ? "bg-teal-400" : "bg-stone-200",
+                )}
+                aria-hidden
+              />
+            )}
+          </div>
         );
       })}
     </nav>

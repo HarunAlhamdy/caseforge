@@ -11,6 +11,34 @@
         "docs/**",
         "tests/**"
       ],
+      "headers": [
+        {
+          "source": "/api/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "private, no-store, no-cache, max-age=0, must-revalidate"
+            },
+            {
+              "key": "CDN-Cache-Control",
+              "value": "no-store"
+            },
+            {
+              "key": "Vary",
+              "value": "Cookie, Authorization"
+            }
+          ]
+        },
+        {
+          "source": "/dashboard/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "private, no-store, max-age=0"
+            }
+          ]
+        }
+      ],
       "frameworksBackend": {
         "region": "us-central1",
         "memory": "1GiB",

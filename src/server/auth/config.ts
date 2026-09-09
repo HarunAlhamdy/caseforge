@@ -73,7 +73,7 @@ const credentialsProvider = Credentials({
       where: { email: parsed.data.email.toLowerCase() },
     });
 
-    if (!user?.passwordHash || !user.isActive) {
+    if (!user?.passwordHash || !user.isActive || !user.emailVerifiedAt) {
       return null;
     }
 
@@ -148,9 +148,25 @@ function buildProviders(): NextAuthConfig["providers"] {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
+    // Avoid blank /api/auth/error HTML from Auth.js built-in page
+    error: "/login",
+  },
+  // Firebase Hosting only forwards a cookie named `__session` to Cloud Functions/Run.
+  // See: https://firebase.google.com/docs/hosting/manage-cache#using_cookies
+  cookies: {
+    sessionToken: {
+      name: "__session",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+      },
+    },
   },
   providers: buildProviders(),
   callbacks: {

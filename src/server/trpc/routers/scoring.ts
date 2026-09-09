@@ -280,12 +280,7 @@ export const scoringRouter = createTRPCRouter({
 
       const snapshots = snapshotsFromModel(model);
       const weights = activeVersion
-        ? {
-            ...versionToWeightSnapshot(activeVersion),
-            valueDrivers: snapshots.valueDrivers,
-            feasibilityDrivers: snapshots.feasibilityDrivers,
-            riskDrivers: snapshots.riskDrivers,
-          }
+        ? versionToWeightSnapshot(activeVersion)
         : {
             ...snapshots,
             riskTierConfig: snapshots.riskTierConfig,
@@ -523,6 +518,7 @@ export const scoringRouter = createTRPCRouter({
     }),
 
   getScoreHistory: protectedProcedure
+    .use(roleMiddleware(scoringRoles))
     .input(z.object({ useCaseId: z.string() }))
     .query(async ({ ctx, input }) => {
       requireTenantId(ctx);

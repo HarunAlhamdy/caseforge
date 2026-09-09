@@ -1,10 +1,6 @@
-import { AppPage } from "@/components/layout/AppPage";
+import { redirect } from "next/navigation";
 
+/** Export lives on the portfolio scoring page. */
 export default function Page() {
-  return (
-    <AppPage
-      title="Data Export"
-      description="Export portfolio data to Excel or CSV."
-    />
-  );
+  redirect("/scoring/portfolio");
 }

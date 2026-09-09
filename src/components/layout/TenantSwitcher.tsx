@@ -71,7 +71,7 @@ export function TenantSwitcher() {
       {open ? (
         <ul
           role="listbox"
-          className="absolute left-0 top-full z-20 mt-1 max-h-72 w-64 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+          className="absolute left-0 top-full z-50 mt-1 max-h-72 w-64 overflow-y-auto rounded-xl border border-stone-200 bg-white py-1 shadow-lg"
         >
           <li role="option" aria-selected={currentId === null}>
             <button

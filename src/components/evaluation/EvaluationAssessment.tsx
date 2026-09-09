@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { trpc } from "@/trpc/react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -30,7 +29,7 @@ export function EvaluationAssessment({ useCaseId }: EvaluationAssessmentProps) {
     return <p className="text-sm text-slate-500">Loading assessment…</p>;
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const scores = Object.entries(localScores)
       .filter(([, v]) => v.score >= 1)
       .map(([questionId, v]) => ({
@@ -38,24 +37,51 @@ export function EvaluationAssessment({ useCaseId }: EvaluationAssessmentProps) {
         score: v.score,
         evidenceNotes: v.evidence,
       }));
-    if (scores.length) save.mutate({ useCaseId, scores });
+    if (scores.length) {
+      await save.mutateAsync({ useCaseId, scores });
+    }
+  };
+
+  const navigateAfterSave = async (href: string) => {
+    try {
+      await handleSave();
+    } catch {
+      return;
+    }
+    window.location.assign(href);
   };
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Link href={`/evaluation/${useCaseId}/gates`} className="text-sm text-brand-primary hover:underline">
+        <button
+          type="button"
+          className="text-sm text-brand-primary hover:underline"
+          onClick={() => void navigateAfterSave(`/evaluation/${useCaseId}/gates`)}
+        >
           Hard Gates →
-        </Link>
-        <Link href={`/evaluation/${useCaseId}/financial`} className="text-sm text-brand-primary hover:underline">
+        </button>
+        <button
+          type="button"
+          className="text-sm text-brand-primary hover:underline"
+          onClick={() => void navigateAfterSave(`/evaluation/${useCaseId}/financial`)}
+        >
           Financial →
-        </Link>
-        <Link href={`/evaluation/${useCaseId}/criteria`} className="text-sm text-brand-primary hover:underline">
+        </button>
+        <button
+          type="button"
+          className="text-sm text-brand-primary hover:underline"
+          onClick={() => void navigateAfterSave(`/evaluation/${useCaseId}/criteria`)}
+        >
           Criteria →
-        </Link>
-        <Link href={`/evaluation/${useCaseId}/scorecard`} className="text-sm text-brand-primary hover:underline">
+        </button>
+        <button
+          type="button"
+          className="text-sm text-brand-primary hover:underline"
+          onClick={() => void navigateAfterSave(`/evaluation/${useCaseId}/scorecard`)}
+        >
           Scorecard →
-        </Link>
+        </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-lg bg-slate-50 p-4">

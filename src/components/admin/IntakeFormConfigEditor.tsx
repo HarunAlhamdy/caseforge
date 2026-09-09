@@ -12,6 +12,7 @@ export function IntakeFormConfigEditor() {
   });
 
   const [jsonText, setJsonText] = useState("");
+  const [parseError, setParseError] = useState<string | null>(null);
 
   useEffect(() => {
     if (data?.intakeFormConfig) {
@@ -31,12 +32,23 @@ export function IntakeFormConfigEditor() {
       <textarea
         className="min-h-[360px] w-full rounded-lg border border-slate-300 p-3 font-mono text-xs"
         value={jsonText}
-        onChange={(e) => setJsonText(e.target.value)}
+        onChange={(e) => {
+          setJsonText(e.target.value);
+          setParseError(null);
+        }}
       />
+      {parseError ? (
+        <p className="text-sm text-red-600">{parseError}</p>
+      ) : null}
       <Button
         onClick={() => {
-          const parsed = JSON.parse(jsonText) as IntakeFormConfig;
-          update.mutate(parsed);
+          try {
+            const parsed = JSON.parse(jsonText) as IntakeFormConfig;
+            setParseError(null);
+            update.mutate(parsed);
+          } catch {
+            setParseError("Invalid JSON — fix the config before saving.");
+          }
         }}
         isLoading={update.isPending}
       >

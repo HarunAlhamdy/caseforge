@@ -2,6 +2,7 @@ import { PrismaClient, TenantType } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { provisionTenant } from "@/server/services/scoring-model-service";
+import { sendVerificationForUser } from "@/server/services/email-verification-service";
 
 export const registerInputSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -38,10 +39,19 @@ export async function registerSelfServeAccount(
     subscriptionTier: "STARTER",
   });
 
+  let verificationSent = false;
+  try {
+    await sendVerificationForUser(db, admin.id);
+    verificationSent = true;
+  } catch (err) {
+    console.error("[register] verification email failed", err);
+  }
+
   return {
     userId: admin.id,
     tenantId: tenant.id,
     email: admin.email,
     name: admin.name,
+    verificationSent,
   };
 }

@@ -180,7 +180,14 @@ export function OperationsDashboard() {
         <tbody>
           {data.production.map((uc) => (
             <tr key={uc.id} className="border-t border-slate-100">
-              <td className="p-2">{uc.title}</td>
+              <td className="p-2">
+                <a
+                  href={`/operations/${uc.id}`}
+                  className="font-medium text-brand-primary hover:underline"
+                >
+                  {uc.title}
+                </a>
+              </td>
               <td className="p-2">{uc.currentStage}</td>
               <td className="p-2">
                 <Button

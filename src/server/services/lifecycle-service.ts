@@ -3,6 +3,7 @@ import type { PrismaClient } from "@prisma/client";
 import type { LifecycleStage } from "@/lib/types";
 import { checkTransitionGuards } from "@/lib/workflow/transition-guards";
 import { isValidTransition } from "@/lib/workflow/stage-transitions";
+import { buildTransitionContext } from "@/server/services/workflow-engine";
 
 export interface ExecuteTransitionParams {
   scopedDb: PrismaClient;
@@ -15,17 +16,34 @@ export interface ExecuteTransitionParams {
   gateDecision?: string;
   profileReviewsComplete?: boolean;
   portfolioScored?: boolean;
+  feasibilityComplete?: boolean;
+  waveAssigned?: boolean;
+  pilotVerified?: boolean;
+  intakeComplete?: boolean;
+  userRole?: string;
 }
 
 export async function executeStageTransition(
   params: ExecuteTransitionParams,
 ): Promise<void> {
+  const built = await buildTransitionContext(
+    params.scopedDb,
+    params.useCaseId,
+  );
+
   const guard = checkTransitionGuards({
     currentStage: params.fromStage,
     targetStage: params.toStage,
-    gateDecision: params.gateDecision,
-    profileReviewsComplete: params.profileReviewsComplete,
-    portfolioScored: params.portfolioScored,
+    gateDecision: params.gateDecision ?? built?.gateDecision,
+    profileReviewsComplete:
+      params.profileReviewsComplete ?? built?.profileReviewsComplete,
+    portfolioScored: params.portfolioScored ?? built?.portfolioScored,
+    feasibilityComplete:
+      params.feasibilityComplete ?? built?.feasibilityComplete,
+    waveAssigned: params.waveAssigned ?? built?.waveAssigned,
+    pilotVerified: params.pilotVerified ?? built?.pilotVerified,
+    intakeComplete: params.intakeComplete ?? built?.intakeComplete,
+    userRole: params.userRole,
   });
 
   if (!guard.allowed) {
@@ -91,9 +109,6 @@ export async function ensureStage(
       ...params,
       fromStage: stage,
       toStage: params.targetStage,
-      gateDecision: params.gateDecision,
-      profileReviewsComplete: params.profileReviewsComplete,
-      portfolioScored: params.portfolioScored,
     });
     stage = params.targetStage;
   }

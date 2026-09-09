@@ -91,11 +91,15 @@ export async function notifyUsers(
     const email = createNotificationService();
     for (const user of users) {
       if (user.email) {
-        await email.send({
-          to: user.email,
-          subject: params.emailSubject,
-          html: params.emailHtml,
-        });
+        try {
+          await email.send({
+            to: user.email,
+            subject: params.emailSubject,
+            html: params.emailHtml,
+          });
+        } catch (err) {
+          console.error("[notifyUsers] email send failed for", user.email, err);
+        }
       }
     }
   }

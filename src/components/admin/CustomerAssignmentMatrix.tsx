@@ -7,9 +7,11 @@ import { SecurityRole } from "@/lib/constants/enums";
 const ASSIGNABLE_ROLES = [
   SecurityRole.PORTFOLIO_MANAGER,
   SecurityRole.EVALUATOR,
+  SecurityRole.DATA_SECURITY_REVIEWER,
   SecurityRole.VIEWER,
-  SecurityRole.PARTNER_CONSULTANT,
-];
+] as const;
+
+type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
 
 export function CustomerAssignmentMatrix() {
   const { data: consultants, isLoading: loadingConsultants } =
@@ -71,7 +73,7 @@ export function CustomerAssignmentMatrix() {
                         assign.mutate({
                           partnerUserId: consultant.id,
                           tenantId: tenant.id,
-                          roleInTenant: e.target.value as SecurityRole,
+                          roleInTenant: e.target.value as AssignableRole,
                         });
                       }}
                     >

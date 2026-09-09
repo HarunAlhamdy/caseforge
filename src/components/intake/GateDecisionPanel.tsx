@@ -10,12 +10,36 @@ import type { IntakeFormValues } from "@/lib/intake/schema";
 import type { IntakeFormConfig } from "@/lib/types";
 
 const GATE_OPTIONS: { value: GateDecision; label: string; help: string }[] = [
-  { value: GateDecision.PASS, label: "Pass", help: "Proceed to specialist profile reviews." },
-  { value: GateDecision.GATE_A, label: "Gate A", help: "Too easy — automate without AI." },
-  { value: GateDecision.GATE_B, label: "Gate B", help: "Insufficient value or misaligned scope." },
-  { value: GateDecision.GATE_C, label: "Gate C", help: "Data or integration blockers." },
-  { value: GateDecision.GATE_D, label: "Gate D", help: "Policy / risk unacceptable." },
-  { value: GateDecision.HOLD, label: "Hold", help: "Request additional information from submitter." },
+  {
+    value: GateDecision.PASS,
+    label: "Pass — Cleared",
+    help: "This is an AI/agentic problem, scoped for this engagement, with enough information to score. Advances to specialist profile reviews.",
+  },
+  {
+    value: GateDecision.GATE_A,
+    label: "Gate A — Too easy",
+    help: "Already solved by a prompt, copilot, or existing tool. Returned to submitter with guidance.",
+  },
+  {
+    value: GateDecision.GATE_B,
+    label: "Gate B — Wrong tool",
+    help: "Better solved by conventional analytics, RPA, or middleware. Redirected with a named alternative.",
+  },
+  {
+    value: GateDecision.GATE_C,
+    label: "Gate C — Too far",
+    help: "Real AI opportunity but exceeds engagement scope or depends on prerequisites that have not landed. Parked at ROM estimate for later revisit.",
+  },
+  {
+    value: GateDecision.GATE_D,
+    label: "Gate D — Needs redesign",
+    help: "Fails human-in-command test as described, or autonomy level is unacceptable without redesign. Returned with specific redesign requirements.",
+  },
+  {
+    value: GateDecision.HOLD,
+    label: "Hold — Incomplete",
+    help: "Described as a symptom, a bundle, or too vague to evaluate. Returned with a request for SME detail or scope split.",
+  },
 ];
 
 interface GateDecisionPanelProps {

@@ -142,12 +142,36 @@ export function PortfolioTable() {
               <tr key={row.useCaseId}>
                 <td className="px-3 py-2 font-medium">{row.rank ?? "—"}</td>
                 <td className="px-3 py-2">
-                  <Link
-                    href={`/scoring/${row.useCaseId}`}
-                    className="text-brand-primary hover:underline"
-                  >
-                    {row.title}
-                  </Link>
+                  <div className="flex flex-col gap-0.5">
+                    <Link
+                      href={`/scoring/${row.useCaseId}`}
+                      className="text-brand-primary hover:underline"
+                    >
+                      {row.title}
+                    </Link>
+                    <span className="text-xs text-slate-500">
+                      <Link
+                        href={`/architecture/${row.useCaseId}`}
+                        className="hover:underline"
+                      >
+                        Architecture
+                      </Link>
+                      {" · "}
+                      <Link
+                        href={`/evaluation/${row.useCaseId}`}
+                        className="hover:underline"
+                      >
+                        Evaluation
+                      </Link>
+                      {" · "}
+                      <Link
+                        href={`/delivery/pilot/${row.useCaseId}`}
+                        className="hover:underline"
+                      >
+                        Pilot
+                      </Link>
+                    </span>
+                  </div>
                 </td>
                 <td className="px-3 py-2">{row.businessUnit}</td>
                 <td className="px-3 py-2">{row.valueScore?.toFixed(2) ?? "—"}</td>

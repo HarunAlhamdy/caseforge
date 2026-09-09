@@ -25,13 +25,13 @@ interface IntakeFormState {
   loadDraft: (values: IntakeFormValues, useCaseId?: string | null) => void;
   updateDraft: (patch: Partial<IntakeFormValues>) => void;
   markClean: () => void;
-  markSaved: () => void;
+  markSaved: (savedSnapshot?: IntakeFormValues) => void;
   resetDraft: () => void;
 }
 
 export const useIntakeFormStore = create<IntakeFormState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       useCaseId: null,
       draft: { ...emptyIntakeDraft },
       activeSection: "submission",
@@ -51,8 +51,16 @@ export const useIntakeFormStore = create<IntakeFormState>()(
           isDirty: true,
         })),
       markClean: () => set({ isDirty: false }),
-      markSaved: () =>
-        set({ isDirty: false, lastSavedAt: new Date().toISOString() }),
+      markSaved: (savedSnapshot) => {
+        const current = get().draft;
+        const stillDirty =
+          savedSnapshot != null &&
+          JSON.stringify(current) !== JSON.stringify(savedSnapshot);
+        set({
+          isDirty: stillDirty,
+          lastSavedAt: new Date().toISOString(),
+        });
+      },
       resetDraft: () =>
         set({
           useCaseId: null,
@@ -70,6 +78,19 @@ export const useIntakeFormStore = create<IntakeFormState>()(
         activeSection: state.activeSection,
         lastSavedAt: state.lastSavedAt,
       }),
+      merge: (persisted, current) => {
+        const p = persisted as Partial<IntakeFormState> | undefined;
+        if (!p) return current;
+        return {
+          ...current,
+          ...p,
+          // Never rehydrate as dirty; server hydrate/reset decides truth
+          isDirty: false,
+          draft: p.draft
+            ? { ...emptyIntakeDraft, ...p.draft }
+            : current.draft,
+        };
+      },
     },
   ),
 );

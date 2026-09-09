@@ -48,11 +48,32 @@ export function WavePlanningBoard() {
               <div className="space-y-2">
                 {items.map((uc) => (
                   <div key={uc.id} className="rounded border border-slate-200 bg-white p-2 text-sm">
-                    <p className="font-medium">{uc.title}</p>
+                    <p className="font-medium">
+                      <a
+                        href={`/usecase/${uc.id}`}
+                        className="text-brand-primary hover:underline"
+                      >
+                        {uc.title}
+                      </a>
+                    </p>
                     <p className="text-xs text-slate-500">P: {uc.priorityScore?.toFixed(2)}</p>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {uc.costBand ? <Badge>{uc.costBand}</Badge> : null}
                       {uc.riskTier ? <Badge variant="warning">{uc.riskTier}</Badge> : null}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                      <a
+                        href={`/delivery/pilot/${uc.id}`}
+                        className="text-brand-primary hover:underline"
+                      >
+                        Pilot
+                      </a>
+                      <a
+                        href={`/delivery/scaleup/${uc.id}`}
+                        className="text-brand-primary hover:underline"
+                      >
+                        Scale-up
+                      </a>
                     </div>
                     <select
                       className="mt-2 w-full rounded border border-slate-300 text-xs"

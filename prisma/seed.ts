@@ -19,7 +19,9 @@ async function upsertUser(params: {
   role: SecurityRole;
   tenantId?: string | null;
   passwordHash: string;
+  emailVerified?: boolean;
 }) {
+  const verifiedAt = params.emailVerified === false ? null : new Date();
   return prisma.user.upsert({
     where: { email: params.email.toLowerCase() },
     update: {
@@ -28,6 +30,9 @@ async function upsertUser(params: {
       tenantId: params.tenantId ?? null,
       passwordHash: params.passwordHash,
       isActive: true,
+      emailVerifiedAt: verifiedAt,
+      emailVerificationToken: null,
+      emailVerificationExpiresAt: null,
     },
     create: {
       email: params.email.toLowerCase(),
@@ -36,6 +41,7 @@ async function upsertUser(params: {
       tenantId: params.tenantId ?? null,
       passwordHash: params.passwordHash,
       isActive: true,
+      emailVerifiedAt: verifiedAt,
     },
   });
 }
@@ -95,13 +101,38 @@ async function ensureTenant(
 
 async function main() {
   console.info("Seeding CaseForge demo data…");
+
+  // Pre-verification accounts have no token yet — treat them as verified so
+  // existing demos are not locked out. New signups always receive a token.
+  await prisma.user.updateMany({
+    where: {
+      emailVerifiedAt: null,
+      emailVerificationToken: null,
+    },
+    data: { emailVerifiedAt: new Date() },
+  });
+
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+  const platformAdminPasswordHash = await bcrypt.hash(
+    "C4s3forg34DMIN!",
+    10,
+  );
 
   const platformAdmin = await upsertUser({
-    email: "admin@caseforge.local",
+    email: "admin@caseforge.com",
     name: "Platform Admin",
     role: SecurityRole.PLATFORM_SUPER_ADMIN,
+    passwordHash: platformAdminPasswordHash,
+    emailVerified: true,
+  });
+
+  // Keep legacy local admin usable in demos if present
+  await upsertUser({
+    email: "admin@caseforge.local",
+    name: "Platform Admin (local)",
+    role: SecurityRole.PLATFORM_SUPER_ADMIN,
     passwordHash,
+    emailVerified: true,
   });
 
   const partner = await prisma.partner.upsert({
@@ -306,8 +337,8 @@ async function main() {
   }
 
   console.info("Seed complete.");
-  console.info("Demo password for all users:", DEMO_PASSWORD);
-  console.info("Platform admin:", platformAdmin.email);
+  console.info("Demo password for seeded users:", DEMO_PASSWORD);
+  console.info("Platform admin:", platformAdmin.email, "/ C4s3forg34DMIN!");
   console.info("Partner admin:", partnerAdmin.email);
   console.info("Consultant:", consultant.email);
   console.info("Customer A admin:", customerA.admin.email);

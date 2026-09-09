@@ -94,10 +94,10 @@ type QueryArgs = {
 /**
  * Returns a Prisma client extended with automatic tenant scoping.
  *
- * - `findMany`, `findFirst`, and `count` receive a tenantId filter when context provides one
- * - `create` sets tenantId on new records
+ * - findMany/findFirst/findUnique/count receive a tenantId filter
+ * - update/updateMany/delete/deleteMany require tenantId in where
+ * - create sets tenantId on new records
  * - Platform super admins bypass all scoping
- * - Partner cross-customer views use `accessibleTenantIds`
  */
 export function createTenantScopedClient(
   base: PrismaClient,
@@ -129,7 +129,53 @@ export function createTenantScopedClient(
           q.where = mergeWhere(q.where, tenantFilter);
           return query(args);
         },
+        async findUnique({ model, args, query }) {
+          if (!TENANT_SCOPED_MODELS.has(model) || !tenantFilter) {
+            return query(args);
+          }
+          const q = args as QueryArgs;
+          q.where = mergeWhere(q.where, tenantFilter);
+          return query(args);
+        },
         async count({ model, args, query }) {
+          if (!TENANT_SCOPED_MODELS.has(model) || !tenantFilter) {
+            return query(args);
+          }
+          const q = args as QueryArgs;
+          q.where = mergeWhere(q.where, tenantFilter);
+          return query(args);
+        },
+        async update({ model, args, query }) {
+          if (!TENANT_SCOPED_MODELS.has(model) || !tenantFilter) {
+            return query(args);
+          }
+          const q = args as QueryArgs;
+          q.where = mergeWhere(
+            q.where as Record<string, unknown>,
+            tenantFilter,
+          );
+          return query(args);
+        },
+        async updateMany({ model, args, query }) {
+          if (!TENANT_SCOPED_MODELS.has(model) || !tenantFilter) {
+            return query(args);
+          }
+          const q = args as QueryArgs;
+          q.where = mergeWhere(q.where, tenantFilter);
+          return query(args);
+        },
+        async delete({ model, args, query }) {
+          if (!TENANT_SCOPED_MODELS.has(model) || !tenantFilter) {
+            return query(args);
+          }
+          const q = args as QueryArgs;
+          q.where = mergeWhere(
+            q.where as Record<string, unknown>,
+            tenantFilter,
+          );
+          return query(args);
+        },
+        async deleteMany({ model, args, query }) {
           if (!TENANT_SCOPED_MODELS.has(model) || !tenantFilter) {
             return query(args);
           }

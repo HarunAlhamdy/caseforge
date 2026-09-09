@@ -103,8 +103,9 @@ export function FinancialPanel({ useCaseId }: { useCaseId: string }) {
           ];
           const payload: Record<string, number> = {};
           for (const f of fields) {
-            const el = document.getElementById(f) as HTMLInputElement;
-            if (el?.value) payload[f] = Number(el.value);
+            const el = document.getElementById(f) as HTMLInputElement | null;
+            if (!el) continue;
+            payload[f] = el.value === "" ? 0 : Number(el.value);
           }
           save.mutate({ useCaseId, data: payload });
         }}

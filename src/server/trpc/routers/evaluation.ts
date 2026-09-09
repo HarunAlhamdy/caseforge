@@ -201,7 +201,13 @@ export const evaluationRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      requireTenantId(ctx);
+      const tenantId = requireTenantId(ctx);
+      const owned = await ctx.scopedDb.useCase.findFirst({
+        where: { id: input.useCaseId, tenantId },
+        select: { id: true },
+      });
+      if (!owned) throw new TRPCError({ code: "NOT_FOUND" });
+
       for (const item of input.scores) {
         const existing = await ctx.scopedDb.feasibilityAssessment.findFirst({
           where: {
@@ -233,7 +239,6 @@ export const evaluationRouter = createTRPCRouter({
         }
       }
 
-      const tenantId = requireTenantId(ctx);
       const model = await getOrCreateDefaultScoringModel(ctx.db, tenantId);
       const dimensions = await ctx.scopedDb.feasibilityDimension.findMany({
         where: { modelId: model.id },
@@ -307,8 +312,18 @@ export const evaluationRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      requireTenantId(ctx);
+      const tenantId = requireTenantId(ctx);
+      const owned = await ctx.scopedDb.useCase.findFirst({
+        where: { id: input.useCaseId, tenantId },
+        select: { id: true },
+      });
+      if (!owned) throw new TRPCError({ code: "NOT_FOUND" });
+
       for (const gate of input.gates) {
+        const existing = await ctx.scopedDb.hardGate.findFirst({
+          where: { id: gate.id, useCaseId: input.useCaseId },
+        });
+        if (!existing) continue;
         await ctx.scopedDb.hardGate.update({
           where: { id: gate.id },
           data: {
@@ -465,9 +480,25 @@ export const evaluationRouter = createTRPCRouter({
           });
         }
         if (useCase.hardGateStatus === HardGateStatus.HAS_FAILURES) {
+          if (
+            input.decision !== "CONDITIONAL" ||
+            !input.waiverNotes?.trim()
+          ) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "Hard gates must pass (or use Conditional Go with waiver notes)",
+            });
+          }
+        }
+        if (
+          input.decision === "APPROVE" &&
+          useCase.hardGateStatus !== HardGateStatus.ALL_PASSED
+        ) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Hard gates must pass (or use Conditional Go with waiver)",
+            message:
+              "All hard gates must be completed and passed before approval",
           });
         }
 

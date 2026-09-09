@@ -21,8 +21,18 @@ function buildSession(overrides: Partial<Session["user"]> = {}): Session {
   };
 }
 
-function mockDb(partnerUser: unknown = null) {
+function mockDb(
+  partnerUser: unknown = null,
+  userOverrides: { role?: string; tenantId?: string | null; isActive?: boolean } = {},
+) {
   return {
+    user: {
+      findUnique: vi.fn().mockResolvedValue({
+        isActive: userOverrides.isActive ?? true,
+        role: userOverrides.role ?? SecurityRole.VIEWER,
+        tenantId: userOverrides.tenantId ?? "tenant-a",
+      }),
+    },
     partnerUser: {
       findUnique: vi.fn().mockResolvedValue(partnerUser),
     },
@@ -31,7 +41,12 @@ function mockDb(partnerUser: unknown = null) {
 
 describe("AccessResolver tenant isolation", () => {
   it("allows platform admin to access any tenant", async () => {
-    const resolver = new AccessResolver(mockDb(null));
+    const resolver = new AccessResolver(
+      mockDb(null, {
+        role: SecurityRole.PLATFORM_SUPER_ADMIN,
+        tenantId: null,
+      }),
+    );
     const session = buildSession({
       role: SecurityRole.PLATFORM_SUPER_ADMIN,
       tenantId: null,

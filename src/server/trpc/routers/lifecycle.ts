@@ -1,13 +1,24 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { SecurityRole } from "@prisma/client";
 import { createTRPCRouter } from "../trpc";
-import { protectedProcedure } from "../procedures";
+import { protectedProcedure, auditedProcedure } from "../procedures";
+import { roleMiddleware } from "../middleware";
 import {
   buildTransitionContext,
   getAvailableTransitions,
   transitionAsync,
 } from "@/server/services/workflow-engine";
 import type { LifecycleStage } from "@/lib/types";
+
+const deliveryRoles: SecurityRole[] = [
+  SecurityRole.PORTFOLIO_MANAGER,
+  SecurityRole.CUSTOMER_ADMIN,
+  SecurityRole.EVALUATOR,
+  SecurityRole.PLATFORM_SUPER_ADMIN,
+  SecurityRole.PARTNER_ADMIN,
+  SecurityRole.PARTNER_CONSULTANT,
+];
 
 function requireTenantId(ctx: {
   access: NonNullable<
@@ -52,7 +63,8 @@ export const lifecycleRouter = createTRPCRouter({
       });
     }),
 
-  transition: protectedProcedure
+  transition: auditedProcedure
+    .use(roleMiddleware(deliveryRoles))
     .input(
       z.object({
         useCaseId: z.string(),
@@ -62,6 +74,14 @@ export const lifecycleRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       requireTenantId(ctx);
+      const owned = await ctx.scopedDb.useCase.findFirst({
+        where: { id: input.useCaseId },
+        select: { id: true },
+      });
+      if (!owned) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
       const base = await buildTransitionContext(ctx.scopedDb, input.useCaseId);
       if (!base) {
         throw new TRPCError({ code: "NOT_FOUND" });

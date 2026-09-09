@@ -1,6 +1,8 @@
 import { TRPCError } from "@trpc/server";
+import { SecurityRole } from "@prisma/client";
 import { createTRPCRouter } from "../trpc";
 import { protectedProcedure } from "../procedures";
+import { roleMiddleware } from "../middleware";
 import {
   getDashboardSummary,
   getExecutiveSummary,
@@ -59,7 +61,9 @@ export const dashboardRouter = createTRPCRouter({
     return { healthScores: data.healthScores, customers: data.customers };
   }),
 
-  exportPortfolio: protectedProcedure.mutation(async ({ ctx }) => {
+  exportPortfolio: protectedProcedure
+    .use(roleMiddleware([SecurityRole.PORTFOLIO_MANAGER, SecurityRole.CUSTOMER_ADMIN, SecurityRole.PARTNER_ADMIN, SecurityRole.PLATFORM_SUPER_ADMIN]))
+    .mutation(async ({ ctx }) => {
     const tenantId = requireTenantId(ctx);
     const summary = await getDashboardSummary(ctx.scopedDb, tenantId);
     const rows = summary.topUseCases.map((uc) => ({
@@ -81,7 +85,9 @@ export const dashboardRouter = createTRPCRouter({
     };
   }),
 
-  exportGateReport: protectedProcedure.mutation(async ({ ctx }) => {
+  exportGateReport: protectedProcedure
+    .use(roleMiddleware([SecurityRole.PORTFOLIO_MANAGER, SecurityRole.CUSTOMER_ADMIN, SecurityRole.PARTNER_ADMIN, SecurityRole.PLATFORM_SUPER_ADMIN]))
+    .mutation(async ({ ctx }) => {
     const tenantId = requireTenantId(ctx);
     const gated = await ctx.scopedDb.useCase.findMany({
       where: {

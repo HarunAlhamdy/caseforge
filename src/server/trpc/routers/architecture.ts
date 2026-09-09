@@ -500,7 +500,7 @@ export const architectureRouter = createTRPCRouter({
         userId: ctx.user.id,
         currentStage: useCase.currentStage,
         targetStage: LifecycleStage.DEEP_FEASIBILITY,
-        portfolioScored: true,
+        portfolioScored: useCase.priorityScore != null,
         notes: "Architecture complete",
       });
 

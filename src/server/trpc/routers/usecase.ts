@@ -224,11 +224,18 @@ export const usecaseRouter = createTRPCRouter({
         data: {
           tenantId,
           useCaseNumber,
-          title: input?.title?.trim() || "Untitled draft",
-          businessUnit: input?.businessUnit?.trim() || "Unassigned",
           submittedById: ctx.user.id,
           currentStage: LifecycleStage.INTAKE_DRAFT,
           ...data,
+          title:
+            (typeof data.title === "string" && data.title.trim()) ||
+            input?.title?.trim() ||
+            "Untitled draft",
+          businessUnit:
+            (typeof data.businessUnit === "string" &&
+              data.businessUnit.trim()) ||
+            input?.businessUnit?.trim() ||
+            "Unassigned",
         },
       });
 
@@ -276,10 +283,11 @@ export const usecaseRouter = createTRPCRouter({
       });
 
       const actionItem = actionItemFromIntake(input.data);
+      const existingAction = await ctx.scopedDb.actionItem.findFirst({
+        where: { useCaseId: input.id },
+        orderBy: { followUpDate: "desc" },
+      });
       if (actionItem) {
-        const existingAction = await ctx.scopedDb.actionItem.findFirst({
-          where: { useCaseId: input.id },
-        });
         if (existingAction) {
           await ctx.scopedDb.actionItem.update({
             where: { id: existingAction.id },
@@ -290,6 +298,21 @@ export const usecaseRouter = createTRPCRouter({
             data: { useCaseId: input.id, tenantId, ...actionItem },
           });
         }
+      } else if (
+        existingAction &&
+        (input.data.recommendedAction !== undefined ||
+          input.data.nextStepsOwner !== undefined ||
+          input.data.followUpDate !== undefined)
+      ) {
+        // User cleared next-steps fields — clear stored action item too
+        await ctx.scopedDb.actionItem.update({
+          where: { id: existingAction.id },
+          data: {
+            recommendedAction: null,
+            owner: null,
+            followUpDate: null,
+          },
+        });
       }
 
       return updated;
@@ -299,8 +322,12 @@ export const usecaseRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       requireTenantId(ctx);
+      const submitterFilter =
+        ctx.access?.effectiveRole === SecurityRole.SUBMITTER
+          ? { submittedById: ctx.user.id }
+          : {};
       const useCase = await ctx.scopedDb.useCase.findFirst({
-        where: { id: input.id },
+        where: { id: input.id, ...submitterFilter },
         include: {
           submittedBy: { select: { id: true, name: true, email: true } },
           actionItems: { take: 1, orderBy: { followUpDate: "desc" } },

@@ -83,9 +83,9 @@ export const workflowRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      requireTenantId(ctx);
+      const tenantId = requireTenantId(ctx);
       return ctx.scopedDb.useCase.update({
-        where: { id: input.useCaseId },
+        where: { id: input.useCaseId, tenantId },
         data: { wave: input.wave === 0 ? null : input.wave },
       });
     }),
@@ -144,9 +144,11 @@ export const workflowRouter = createTRPCRouter({
       });
       if (!useCase) throw new TRPCError({ code: "NOT_FOUND" });
 
-      const controlsVerified = useCase.mandatoryControls.every(
-        (c) => c.status === ControlStatus.VERIFIED,
-      );
+      const controlsVerified =
+        useCase.mandatoryControls.length > 0 &&
+        useCase.mandatoryControls.every(
+          (c) => c.status === ControlStatus.VERIFIED,
+        );
 
       return { useCase, controlsVerified };
     }),
@@ -166,10 +168,15 @@ export const workflowRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      requireTenantId(ctx);
+      const tenantId = requireTenantId(ctx);
+      const ownedCase = await ctx.scopedDb.useCase.findFirst({
+        where: { id: input.useCaseId, tenantId },
+        select: { id: true },
+      });
+      if (!ownedCase) throw new TRPCError({ code: "NOT_FOUND" });
       for (const c of input.criteria) {
         await ctx.scopedDb.successCriteria.update({
-          where: { id: c.id },
+          where: { id: c.id, useCaseId: input.useCaseId },
           data: {
             actualResult: c.actualResult,
             status: c.status as never,
@@ -190,7 +197,12 @@ export const workflowRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      requireTenantId(ctx);
+      const tenantId = requireTenantId(ctx);
+      const control = await ctx.scopedDb.mandatoryControl.findFirst({
+        where: { id: input.controlId, tenantId },
+      });
+      if (!control) throw new TRPCError({ code: "NOT_FOUND" });
+
       return ctx.scopedDb.mandatoryControl.update({
         where: { id: input.controlId },
         data: {
@@ -228,6 +240,12 @@ export const workflowRouter = createTRPCRouter({
       if (!useCase) throw new TRPCError({ code: "NOT_FOUND" });
 
       if (input.decision === "GO") {
+        if (useCase.mandatoryControls.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "At least one mandatory control must exist and be verified before Go",
+          });
+        }
         const allVerified = useCase.mandatoryControls.every(
           (c) => c.status === ControlStatus.VERIFIED,
         );

@@ -14,6 +14,7 @@ import {
 import { roleMiddleware } from "../middleware";
 import { getGlobalConfig, updateGlobalConfig } from "@/lib/constants/global-config";
 import { provisionTenant } from "@/server/services/scoring-model-service";
+import { markEmailVerified } from "@/server/services/email-verification-service";
 import type {
   IntakeFormConfig,
   TenantAdminConfigBundle,
@@ -79,10 +80,164 @@ export const adminRouter = createTRPCRouter({
           name: true,
           role: true,
           isActive: true,
+          emailVerifiedAt: true,
           createdAt: true,
           lastLoginAt: true,
         },
         orderBy: { name: "asc" },
+      });
+    }),
+
+  listAllUsers: protectedProcedure
+    .use(roleMiddleware(platformAdminRoles))
+    .input(
+      z
+        .object({
+          search: z.string().trim().max(120).optional(),
+          includeInactive: z.boolean().optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const search = input?.search?.trim();
+      return ctx.db.user.findMany({
+        where: {
+          ...(input?.includeInactive ? {} : { isActive: true }),
+          ...(search
+            ? {
+                OR: [
+                  { email: { contains: search, mode: "insensitive" } },
+                  { name: { contains: search, mode: "insensitive" } },
+                ],
+              }
+            : {}),
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          isActive: true,
+          emailVerifiedAt: true,
+          tenantId: true,
+          createdAt: true,
+          lastLoginAt: true,
+          tenant: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      });
+    }),
+
+  updateUser: auditedProcedure
+    .use(roleMiddleware(platformAdminRoles))
+    .input(
+      z.object({
+        userId: z.string(),
+        name: z.string().trim().min(1).max(120).optional(),
+        email: z.string().trim().email().max(254).optional(),
+        role: z.nativeEnum(SecurityRole).optional(),
+        tenantId: z.string().nullable().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({
+        where: { id: input.userId },
+      });
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      if (input.email) {
+        const email = input.email.toLowerCase();
+        const conflict = await ctx.db.user.findFirst({
+          where: { email, NOT: { id: input.userId } },
+        });
+        if (conflict) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Another user already uses that email",
+          });
+        }
+      }
+
+      return ctx.db.user.update({
+        where: { id: input.userId },
+        data: {
+          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.email !== undefined
+            ? { email: input.email.toLowerCase() }
+            : {}),
+          ...(input.role !== undefined ? { role: input.role } : {}),
+          ...(input.tenantId !== undefined ? { tenantId: input.tenantId } : {}),
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          isActive: true,
+          emailVerifiedAt: true,
+          tenantId: true,
+        },
+      });
+    }),
+
+  setUserActive: auditedProcedure
+    .use(roleMiddleware(platformAdminRoles))
+    .input(z.object({ userId: z.string(), isActive: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      if (input.userId === ctx.user.id && !input.isActive) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot deactivate your own account",
+        });
+      }
+
+      const user = await ctx.db.user.findUnique({
+        where: { id: input.userId },
+      });
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      return ctx.db.user.update({
+        where: { id: input.userId },
+        data: { isActive: input.isActive },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          isActive: true,
+          emailVerifiedAt: true,
+        },
+      });
+    }),
+
+  verifyUserEmail: auditedProcedure
+    .use(roleMiddleware(platformAdminRoles))
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({
+        where: { id: input.userId },
+      });
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await markEmailVerified(ctx.db, input.userId);
+
+      return ctx.db.user.findUniqueOrThrow({
+        where: { id: input.userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          isActive: true,
+          emailVerifiedAt: true,
+        },
       });
     }),
 
@@ -135,6 +290,7 @@ export const adminRouter = createTRPCRouter({
           role: input.role,
           tenantId,
           passwordHash,
+          emailVerifiedAt: new Date(),
         },
         select: {
           id: true,
@@ -142,6 +298,7 @@ export const adminRouter = createTRPCRouter({
           name: true,
           role: true,
           isActive: true,
+          emailVerifiedAt: true,
         },
       });
 
@@ -159,6 +316,23 @@ export const adminRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const tenantId = requireTenantScope(ctx);
 
+      const customerRoles: SecurityRole[] = [
+        SecurityRole.CUSTOMER_ADMIN,
+        SecurityRole.PORTFOLIO_MANAGER,
+        SecurityRole.EVALUATOR,
+        SecurityRole.SUBMITTER,
+        SecurityRole.DATA_SECURITY_REVIEWER,
+        SecurityRole.EXECUTIVE_SPONSOR,
+        SecurityRole.VIEWER,
+      ];
+
+      if (!customerRoles.includes(input.role)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid role for customer tenant user",
+        });
+      }
+
       const user = await ctx.scopedDb.user.findFirst({
         where: { id: input.userId, tenantId },
       });
@@ -175,6 +349,7 @@ export const adminRouter = createTRPCRouter({
           name: true,
           role: true,
           isActive: true,
+          emailVerifiedAt: true,
         },
       });
     }),
@@ -208,6 +383,34 @@ export const adminRouter = createTRPCRouter({
           name: true,
           role: true,
           isActive: true,
+          emailVerifiedAt: true,
+        },
+      });
+    }),
+
+  reactivateUser: auditedProcedure
+    .use(roleMiddleware(customerAdminRoles))
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const tenantId = requireTenantScope(ctx);
+
+      const user = await ctx.scopedDb.user.findFirst({
+        where: { id: input.userId, tenantId },
+      });
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      return ctx.scopedDb.user.update({
+        where: { id: input.userId },
+        data: { isActive: true },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          isActive: true,
+          emailVerifiedAt: true,
         },
       });
     }),
@@ -299,7 +502,10 @@ export const adminRouter = createTRPCRouter({
         });
       }
 
-      return provisionTenant(ctx.db, input);
+      return provisionTenant(ctx.db, {
+        ...input,
+        markEmailVerified: true,
+      });
     }),
 
   getGlobalConfig: protectedProcedure

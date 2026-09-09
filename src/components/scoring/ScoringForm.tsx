@@ -140,7 +140,7 @@ export function ScoringForm({ useCaseId }: ScoringFormProps) {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const scores = Object.entries(localScores)
       .filter(([, v]) => v.score >= 1 && v.score <= 5)
       .map(([driverId, v]) => ({
@@ -148,7 +148,16 @@ export function ScoringForm({ useCaseId }: ScoringFormProps) {
         score: v.score,
         evidenceNotes: v.evidenceNotes,
       }));
-    saveScores.mutate({ useCaseId, scores });
+    await saveScores.mutateAsync({ useCaseId, scores });
+  };
+
+  const handleComplete = async () => {
+    try {
+      await handleSave();
+      await completeScoring.mutateAsync({ useCaseId });
+    } catch {
+      // mutation errors surface via react-query state
+    }
   };
 
   const computed = data.computed;
@@ -201,14 +210,20 @@ export function ScoringForm({ useCaseId }: ScoringFormProps) {
         onChange={handleChange}
       />
 
+      {(saveScores.error || completeScoring.error) && (
+        <p className="text-sm text-red-600">
+          {(saveScores.error ?? completeScoring.error)?.message}
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-3">
-        <Button onClick={handleSave} disabled={saveScores.isPending}>
+        <Button onClick={() => void handleSave()} disabled={saveScores.isPending}>
           Save scores
         </Button>
         <Button
           variant="primary"
-          onClick={() => completeScoring.mutate({ useCaseId })}
-          disabled={!allScored || completeScoring.isPending}
+          onClick={() => void handleComplete()}
+          disabled={!allScored || completeScoring.isPending || saveScores.isPending}
         >
           Complete Scoring → Deep Feasibility
         </Button>

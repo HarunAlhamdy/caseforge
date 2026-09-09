@@ -80,7 +80,12 @@ export const partnerRouter = createTRPCRouter({
       z.object({
         partnerUserId: z.string(),
         tenantId: z.string(),
-        roleInTenant: z.nativeEnum(SecurityRole),
+        roleInTenant: z.enum([
+          SecurityRole.PORTFOLIO_MANAGER,
+          SecurityRole.EVALUATOR,
+          SecurityRole.DATA_SECURITY_REVIEWER,
+          SecurityRole.VIEWER,
+        ]),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -207,29 +212,32 @@ export const partnerRouter = createTRPCRouter({
       const tempPassword = crypto.randomUUID();
       const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-      const user = await ctx.db.user.create({
-        data: {
-          email: input.email.toLowerCase(),
-          name: input.name,
-          role:
-            input.partnerRole === PartnerRole.PARTNER_ADMIN
-              ? SecurityRole.PARTNER_ADMIN
-              : SecurityRole.PARTNER_CONSULTANT,
-          passwordHash,
-        },
-      });
-
-      const partnerUser = await ctx.db.partnerUser.create({
-        data: {
-          partnerId,
-          userId: user.id,
-          partnerRole: input.partnerRole,
-        },
-        include: {
-          user: {
-            select: { id: true, email: true, name: true, isActive: true },
+      const partnerUser = await ctx.db.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: input.email.toLowerCase(),
+            name: input.name,
+            role:
+              input.partnerRole === PartnerRole.PARTNER_ADMIN
+                ? SecurityRole.PARTNER_ADMIN
+                : SecurityRole.PARTNER_CONSULTANT,
+            passwordHash,
+            emailVerifiedAt: new Date(),
           },
-        },
+        });
+
+        return tx.partnerUser.create({
+          data: {
+            partnerId,
+            userId: user.id,
+            partnerRole: input.partnerRole,
+          },
+          include: {
+            user: {
+              select: { id: true, email: true, name: true, isActive: true },
+            },
+          },
+        });
       });
 
       return { partnerUser, tempPassword };
@@ -254,6 +262,11 @@ export const partnerRouter = createTRPCRouter({
 
       await ctx.db.partnerUser.update({
         where: { id: partnerUser.id },
+        data: { isActive: false },
+      });
+
+      await ctx.db.customerAssignment.updateMany({
+        where: { partnerUserId: partnerUser.id, isActive: true },
         data: { isActive: false },
       });
 

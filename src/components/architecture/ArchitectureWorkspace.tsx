@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -54,7 +54,13 @@ export function ArchitectureWorkspace({ useCaseId }: ArchitectureWorkspaceProps)
     onSuccess: () => void utils.architecture.get.invalidate({ useCaseId }),
   });
 
+  const hydratedArchId = useRef<string | null>(null);
+
   useEffect(() => {
+    const archId = data?.solutionArchitecture?.id ?? null;
+    if (!archId) return;
+    // Only hydrate once per architecture record to avoid wiping in-progress edits
+    if (hydratedArchId.current === archId) return;
     if (data?.solutionArchitecture) {
       setForm(data.solutionArchitecture as unknown as Record<string, unknown>);
     }
@@ -63,6 +69,7 @@ export function ArchitectureWorkspace({ useCaseId }: ArchitectureWorkspaceProps)
       if (el.entersLlmContext) ctx[el.id] = el.entersLlmContext;
     }
     setLlmContext(ctx);
+    hydratedArchId.current = archId;
   }, [data]);
 
   if (isLoading || !data) {
@@ -103,8 +110,26 @@ export function ArchitectureWorkspace({ useCaseId }: ArchitectureWorkspaceProps)
   const update = (key: string, value: unknown) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const handleSave = () => {
-    save.mutate({ useCaseId, ...form } as never);
+  const handleSave = async () => {
+    const elements = Object.entries(llmContext).map(
+      ([id, entersLlmContext]) => ({
+        id,
+        entersLlmContext,
+      }),
+    );
+    await save.mutateAsync({ useCaseId, ...form } as never);
+    if (elements.length) {
+      await setLlm.mutateAsync({ useCaseId, elements });
+    }
+  };
+
+  const handleComplete = async () => {
+    try {
+      await handleSave();
+      await complete.mutateAsync({ useCaseId });
+    } catch {
+      // errors via mutation state
+    }
   };
 
   return (
@@ -311,7 +336,10 @@ export function ArchitectureWorkspace({ useCaseId }: ArchitectureWorkspaceProps)
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        <Button onClick={handleSave} disabled={save.isPending}>
+        <Button
+          onClick={() => void handleSave()}
+          disabled={save.isPending || setLlm.isPending}
+        >
           Save architecture
         </Button>
         <Button
@@ -329,8 +357,8 @@ export function ArchitectureWorkspace({ useCaseId }: ArchitectureWorkspaceProps)
           Calculate & save effort
         </Button>
         <Button
-          onClick={() => complete.mutate({ useCaseId })}
-          disabled={complete.isPending}
+          onClick={() => void handleComplete()}
+          disabled={complete.isPending || save.isPending}
         >
           Complete architecture
         </Button>

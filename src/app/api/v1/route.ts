@@ -1,16 +1,23 @@
 import { NextResponse } from "next/server";
 
-const API_KEY = process.env.CASEFORGE_API_KEY ?? "dev-api-key-change-me";
-
-function checkApiKey(request: Request): boolean {
+function requireApiKey(request: Request): NextResponse | null {
+  const configured = process.env.CASEFORGE_API_KEY;
+  if (!configured) {
+    return NextResponse.json(
+      { error: "API key not configured" },
+      { status: 503 },
+    );
+  }
   const key = request.headers.get("x-api-key");
-  return key === API_KEY;
+  if (key !== configured) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return null;
 }
 
 export async function GET(request: Request) {
-  if (!checkApiKey(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = requireApiKey(request);
+  if (authError) return authError;
   return NextResponse.json({
     version: "v1",
     status: "ok",

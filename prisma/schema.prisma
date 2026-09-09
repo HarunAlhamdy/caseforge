@@ -452,15 +452,18 @@ model Tenant {
 }
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  name         String
-  passwordHash String?
-  tenantId     String?
-  role         SecurityRole @default(VIEWER)
-  isActive     Boolean      @default(true)
-  createdAt    DateTime     @default(now())
-  lastLoginAt  DateTime?
+  id                         String    @id @default(cuid())
+  email                      String    @unique
+  name                       String
+  passwordHash               String?
+  tenantId                   String?
+  role                       SecurityRole @default(VIEWER)
+  isActive                   Boolean   @default(true)
+  emailVerifiedAt            DateTime?
+  emailVerificationToken     String?   @unique
+  emailVerificationExpiresAt DateTime?
+  createdAt                  DateTime  @default(now())
+  lastLoginAt                DateTime?
 
   tenant                         Tenant?              @relation(fields: [tenantId], references: [id])
   partnerUser                    PartnerUser?
@@ -504,6 +507,7 @@ model UseCase {
   aiPattern                AiPattern?
   autonomyLevel            Int?
   currentFtes              Float?
+  currentProcessDescription String?
   currentVolume            String?
   currentCycleTime         String?
   currentErrorRate         Float?
@@ -516,13 +520,16 @@ model UseCase {
   ingestionFrequency       String?
   dataVolume               String?
   historicalRequired       Boolean?
+  historicalLookback       String?
   dqIssues                 String?
   remediationNeeded        Boolean?
+  remediationPlan          String?
   dqOwnership              String?
   businessDomains          Json?
   masterRefData            String?
   modelRelationship        String?
   auditabilityRequired     Boolean?
+  auditabilityDetail       String?
   policyReviewRequired     Boolean?
   policyReviewBody         String?
   ndaStatus                NdaStatus?
@@ -533,12 +540,14 @@ model UseCase {
   dataClassification       DataClassification?
   accessControlReqs        String?
   piiCuiPresent            Boolean?
+  piiCuiDetail             String?
   encryptionReqs           Json?
   govtModelAccess          Boolean?
   securityReviewStatus     SecurityReviewStatus?
   reportingReqs            String?
   endUserPersonas          String?
   conversationalAiRequired Boolean?
+  conversationalAiDetail   String?
   accessChannels           Json?
   downstreamConsumption    String?
   submitterPriority        String?

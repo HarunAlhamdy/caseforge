@@ -19,6 +19,8 @@ export interface ProvisionTenantInput {
   adminName: string;
   /** If omitted, a one-time random password is generated and returned as tempPassword */
   password?: string;
+  /** Admin-provisioned accounts skip email verification */
+  markEmailVerified?: boolean;
 }
 
 export async function provisionTenant(
@@ -29,32 +31,37 @@ export async function provisionTenant(
   const tempPassword = input.password ?? crypto.randomUUID();
   const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-  return db.$transaction(async (tx) => {
-    const tenant = await tx.tenant.create({
-      data: {
-        name: input.name,
-        type: input.type,
-        partnerId: input.partnerId ?? null,
-        subscriptionTier: input.subscriptionTier ?? "STARTER",
-        intakeFormConfig:
-          globalConfig.intakeFormConfig as unknown as Prisma.InputJsonValue,
-      },
-    });
+  // Supabase pooler + many nested creates needs more than Prisma's 5s default
+  return db.$transaction(
+    async (tx) => {
+      const tenant = await tx.tenant.create({
+        data: {
+          name: input.name,
+          type: input.type,
+          partnerId: input.partnerId ?? null,
+          subscriptionTier: input.subscriptionTier ?? "STARTER",
+          intakeFormConfig:
+            globalConfig.intakeFormConfig as unknown as Prisma.InputJsonValue,
+        },
+      });
 
-    const { model } = await createScoringModelForTenant(tx, tenant.id);
+      const { model } = await createScoringModelForTenant(tx, tenant.id);
 
-    const admin = await tx.user.create({
-      data: {
-        email: input.adminEmail.toLowerCase(),
-        name: input.adminName,
-        role: SecurityRole.CUSTOMER_ADMIN,
-        tenantId: tenant.id,
-        passwordHash,
-      },
-    });
+      const admin = await tx.user.create({
+        data: {
+          email: input.adminEmail.toLowerCase(),
+          name: input.adminName,
+          role: SecurityRole.CUSTOMER_ADMIN,
+          tenantId: tenant.id,
+          passwordHash,
+          emailVerifiedAt: input.markEmailVerified ? new Date() : null,
+        },
+      });
 
-    return { tenant, model, admin, tempPassword };
-  });
+      return { tenant, model, admin, tempPassword };
+    },
+    { timeout: 60_000, maxWait: 15_000 },
+  );
 }
 
 async function createScoringModelForTenant(
@@ -135,15 +142,13 @@ async function createScoringModelForTenant(
       },
     });
 
-    for (let qIndex = 0; qIndex < dim.questions.length; qIndex++) {
-      const questionText = dim.questions[qIndex]!;
-      await tx.feasibilityQuestion.create({
-        data: {
-          dimensionId: dimension.id,
-          questionText,
-          displayOrder: qIndex,
-        },
-      });
+    const questions = dim.questions.map((questionText, qIndex) => ({
+      dimensionId: dimension.id,
+      questionText,
+      displayOrder: qIndex,
+    }));
+    if (questions.length) {
+      await tx.feasibilityQuestion.createMany({ data: questions });
     }
   }
 
